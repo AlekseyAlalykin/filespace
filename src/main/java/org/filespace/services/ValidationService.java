@@ -31,7 +31,6 @@ public class ValidationService {
             builder.append(violation.getInvalidValue());
             builder.append(" Message: ");
             builder.append(violation.getMessage());
-            builder.append("<br>");
         }
 
         return builder.toString();

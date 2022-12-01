@@ -4,22 +4,17 @@ import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.fileupload.util.Streams;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.filespace.model.*;
 import org.filespace.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
-import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
@@ -62,10 +57,10 @@ public class IntegratedService {
         userRepository.saveAndFlush(user);
     }
 
-    public User getUserById(String id){
-        Long lId = Long.parseLong(id);
+    public User getUserById(Long id){
 
-        Optional<User> optional = userRepository.findById(lId);
+
+        Optional<User> optional = userRepository.findById(id);
         if (optional.isEmpty())
             throw new EntityNotFoundException("No such user found");
         return optional.get();
@@ -134,6 +129,7 @@ public class IntegratedService {
         ServletFileUpload upload = new ServletFileUpload();
         FileItemIterator iterStream = upload.getItemIterator(request);
 
+        String tempFileLocation = "";
         String md5 = "";
 
         while (iterStream.hasNext()) {
@@ -143,7 +139,10 @@ public class IntegratedService {
             if (!item.isFormField()) {
                 file.setFileName(item.getName());
 
-                md5 = fileService.uploadFile(stream);
+                tempFileLocation = fileService.temporarySaveFile(stream);
+                md5 = fileService.md5FileHash(tempFileLocation);
+                fileService.moveToStorageDirectory(md5, tempFileLocation);
+
                 file.setMd5Hash(md5);
 
             } else {
@@ -171,17 +170,15 @@ public class IntegratedService {
         }
     }
 
-    public List<Object> sendFile(String requestSender, String fileId) throws Exception {
+    public List<Object> sendFile(String requestSender, Long fileId) throws Exception {
         User user = userRepository.findUserByUsername(requestSender);
 
-        Long id = Long.parseLong(fileId);
-        Optional<File> optional = fileRepository.findById(id);
+        Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())
             throw new EntityNotFoundException("No such file found");
 
         File file = optional.get();
-        System.out.println("Оригинальный файл: " + file.toString());
 
         boolean hasRight = false;
 
@@ -198,12 +195,24 @@ public class IntegratedService {
         if (!hasRight)
             throw new IllegalAccessException("No access to the file");
 
+        //System.out.println("Кол-во загрузок: " + file.getNumberOfDownloads().toString());
+        //System.out.println(file.getNumberOfDownloads() + 1);
+        file.setNumberOfDownloads(file.getNumberOfDownloads() + 1);
+
+        fileRepository.saveAndFlush(file);
+
         InputStreamResource resource = fileService.getFile(file.getMd5Hash());
         List<Object> list = new LinkedList<>();
         list.add(file);
         list.add(resource);
 
         return list;
+    }
+
+    public List<File> getUserFiles(String requestSender){
+        User user = userRepository.findUserByUsername(requestSender);
+
+        return user.getFiles();
     }
 
 }

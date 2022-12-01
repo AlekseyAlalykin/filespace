@@ -12,7 +12,7 @@ public class RootController {
         return "file_upload_template";
     }
 
-    @GetMapping("/login")
+    @RequestMapping("/login")
     public String getLoginPage(){
         return "login";
     }

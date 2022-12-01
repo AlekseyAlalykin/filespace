@@ -44,7 +44,9 @@ public class APIUserController {
         User user;
 
         try {
-            user = integratedService.getUserById(id);
+            Long lId = Long.parseLong(id);
+
+            user = integratedService.getUserById(lId);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("No user with such id found");

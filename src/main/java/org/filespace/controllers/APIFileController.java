@@ -8,10 +8,7 @@ import org.filespace.services.FileService;
 import org.filespace.services.IntegratedService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,9 +27,18 @@ public class APIFileController {
     IntegratedService integratedService;
 
     @GetMapping
-    public String getFiles(){
+    public ResponseEntity getFiles(){
+        List<File> files = null;
 
-        return "files";
+        try {
+            files = integratedService.getUserFiles(SecurityUtil.getCurrentUserUsername());
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Something went wrong, try again later");
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(files);
     }
 
     @PostMapping
@@ -80,7 +86,9 @@ public class APIFileController {
         List<Object> list = null;
 
         try {
-            list = integratedService.sendFile(SecurityUtil.getCurrentUserUsername(), id);
+            Long lId = Long.parseLong(id);
+
+            list = integratedService.sendFile(SecurityUtil.getCurrentUserUsername(), lId);
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(e.getMessage());

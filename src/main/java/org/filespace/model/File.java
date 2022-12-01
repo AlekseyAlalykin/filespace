@@ -1,5 +1,7 @@
 package org.filespace.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -18,6 +20,7 @@ public class File extends Model {
     @JoinColumn(name = "sender_id")
     private User sender;
 
+    @JsonIgnore
     @NotNull
     @Size(min = 1)
     @Column(name = "file_name",
@@ -53,6 +56,7 @@ public class File extends Model {
             length = 200)
     private String comment;
 
+    @JsonIgnore
     @NotNull
     @Column(name = "md5_hash",
             nullable = false)

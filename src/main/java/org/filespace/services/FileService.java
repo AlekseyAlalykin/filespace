@@ -70,13 +70,13 @@ public class FileService {
     }
 
     @Deprecated
-    public void uploadFile(MultipartFile multipartFile) throws Exception{
+    public void temporarySaveFile(MultipartFile multipartFile) throws Exception{
         File file = new File(temporaryDirectory + "\\" + multipartFile.getOriginalFilename());
         multipartFile.transferTo(file);
     }
 
     //Сохраняет файл на диск и возвращает md5 хэш сумму от файла
-    public String uploadFile(InputStream stream) throws Exception {
+    public String temporarySaveFile(InputStream stream) throws Exception {
 
         String tempFilename = temporaryDirectory + "\\" + stream.toString();
 
@@ -93,15 +93,15 @@ public class FileService {
         IOUtils.closeQuietly(stream);
         IOUtils.closeQuietly(outStream);
 
-        String md5 = md5FileHash(tempFilename);
+        return tempFilename;
 
-        moveToStorageDirectory(md5,tempFilename);
+        //String md5 = md5FileHash(tempFilename);
 
-        return md5;
+        //moveToStorageDirectory(md5,tempFilename);
     }
 
-    //Находит хэш сумму
-    private String md5FileHash(String path) throws Exception {
+    //Находит хэш сумму от содержимого файла
+    public String md5FileHash(String path) throws Exception {
         String hash;
 
         try (InputStream is = Files.newInputStream(Paths.get(path))) {
@@ -114,7 +114,7 @@ public class FileService {
     //Перемещает временный файл в директорию хранилища в соответствии с его md5
     //Если по пути нет необходимых папок создает их
     //Если файл с данной хэш суммой уже есть тогда файл не перезаписывается и удаляется временный файл
-    private void moveToStorageDirectory(String md5, String fullFilename) throws IOException{
+    public void moveToStorageDirectory(String md5, String fullFilename) throws IOException{
         String filePath = getPathFromMD5(md5);
 
         File file = new File(filePath);
