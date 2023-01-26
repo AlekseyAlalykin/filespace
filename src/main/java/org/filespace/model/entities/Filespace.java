@@ -1,6 +1,8 @@
-package org.filespace.model;
+package org.filespace.model.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.filespace.model.compoundrelations.FileFilespaceRelation;
+import org.filespace.model.compoundrelations.UserFilespaceRelation;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -15,11 +17,11 @@ import java.util.Set;
 public class Filespace extends Model {
 
     @NotNull
-    @Size(min = 3, max = 30,
-            message = "Title should have from 3 up to 30 characters")
+    @Size(min = 3, max = 50,
+            message = "Title should have from 3 up to 50 characters")
     @Column(name = "title",
             nullable = false,
-            length = 30 )
+            length = 50)
     private String title;
 
     @JsonIgnore
@@ -34,6 +36,12 @@ public class Filespace extends Model {
             targetEntity = UserFilespaceRelation.class,
             fetch = FetchType.LAZY)
     private Set<UserFilespaceRelation> userFilespaceRelations = new HashSet<>();
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "filespace",
+            targetEntity = FileFilespaceRelation.class,
+            fetch = FetchType.LAZY)
+    private Set<FileFilespaceRelation> fileFilespaceRelations;
 
     public Filespace(){
 
@@ -65,5 +73,13 @@ public class Filespace extends Model {
 
     public void setUserFilespaceRelations(Set<UserFilespaceRelation> userFilespaceRelations) {
         this.userFilespaceRelations = userFilespaceRelations;
+    }
+
+    public Set<FileFilespaceRelation> getFileFilespaceRelations() {
+        return fileFilespaceRelations;
+    }
+
+    public void setFileFilespaceRelations(Set<FileFilespaceRelation> fileFilespaceRelations) {
+        this.fileFilespaceRelations = fileFilespaceRelations;
     }
 }

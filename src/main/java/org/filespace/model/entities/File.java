@@ -1,6 +1,7 @@
-package org.filespace.model;
+package org.filespace.model.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.filespace.model.compoundrelations.FileFilespaceRelation;
 
 import javax.persistence.*;
 import javax.validation.constraints.Min;
@@ -10,17 +11,18 @@ import javax.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "files")
 public class File extends Model {
 
+    @JsonIgnore
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id")
     private User sender;
 
-    @JsonIgnore
     @NotNull
     @Size(min = 1)
     @Column(name = "file_name",
@@ -62,9 +64,16 @@ public class File extends Model {
             nullable = false)
     private String md5Hash;
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "files",
             fetch = FetchType.LAZY)
     private List<Filespace> filespaces;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "file",
+            targetEntity = FileFilespaceRelation.class,
+            fetch = FetchType.LAZY)
+    private Set<FileFilespaceRelation> fileFilespaceRelations;
 
     public File() {
 
@@ -145,5 +154,19 @@ public class File extends Model {
         this.sender = sender;
     }
 
+    public List<Filespace> getFilespaces() {
+        return filespaces;
+    }
 
+    public void setFilespaces(List<Filespace> filespaces) {
+        this.filespaces = filespaces;
+    }
+
+    public Set<FileFilespaceRelation> getFileFilespaceRelations() {
+        return fileFilespaceRelations;
+    }
+
+    public void setFileFilespaceRelations(Set<FileFilespaceRelation> fileFilespaceRelations) {
+        this.fileFilespaceRelations = fileFilespaceRelations;
+    }
 }

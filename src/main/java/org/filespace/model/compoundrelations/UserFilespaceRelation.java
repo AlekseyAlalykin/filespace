@@ -1,4 +1,8 @@
-package org.filespace.model;
+package org.filespace.model.compoundrelations;
+
+import org.filespace.model.EntityImplementation;
+import org.filespace.model.entities.Filespace;
+import org.filespace.model.entities.User;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;

@@ -1,29 +1,13 @@
 package org.filespace.services;
 
-
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileItemIterator;
-import org.apache.commons.fileupload.FileItemStream;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.fileupload.util.Streams;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-
-import javax.servlet.http.HttpServletRequest;
-import javax.xml.bind.DatatypeConverter;
 import java.io.*;
 import java.nio.file.*;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Properties;
 
 @Service
@@ -56,8 +40,8 @@ public class FileService {
         } catch (Exception e) {
             e.printStackTrace();
 
-            storageDirectory = "C:\\FileServiceRootDirectory";
-            temporaryDirectory = "C:\\temp";
+            storageDirectory = "C:/FileServiceRootDirectory";
+            temporaryDirectory = "C:/temp";
             maxContentLength = 1024*1024*10L;
         }
     }
@@ -71,14 +55,14 @@ public class FileService {
 
     @Deprecated
     public void temporarySaveFile(MultipartFile multipartFile) throws Exception{
-        File file = new File(temporaryDirectory + "\\" + multipartFile.getOriginalFilename());
+        File file = new File(temporaryDirectory + "/" + multipartFile.getOriginalFilename());
         multipartFile.transferTo(file);
     }
 
     //Сохраняет файл на диск и возвращает md5 хэш сумму от файла
     public String temporarySaveFile(InputStream stream) throws Exception {
 
-        String tempFilename = temporaryDirectory + "\\" + stream.toString();
+        String tempFilename = temporaryDirectory + "/" + stream.toString();
 
         File targetFile = new File(tempFilename);
         OutputStream outStream = new FileOutputStream(targetFile);
@@ -130,15 +114,15 @@ public class FileService {
     //Превращает md5 в путь
     private String getPathFromMD5(String md5){
         StringBuffer stringBuffer = new StringBuffer(md5);
-        stringBuffer.insert(2,'\\');
-        stringBuffer.insert(5, '\\');
+        stringBuffer.insert(2,'/');
+        stringBuffer.insert(5, '/');
 
-        return storageDirectory + "\\" + stringBuffer.toString();
+        return storageDirectory + "/" + stringBuffer.toString();
     }
 
     public void deleteFile(String md5) throws IOException{
         String path = getPathFromMD5(md5);
-        Files.delete(Path.of(path));
+        Files.deleteIfExists(Path.of(path));
     }
 
     public InputStreamResource getFile(String md5) throws Exception {

@@ -1,8 +1,9 @@
-package org.filespace.model;
+package org.filespace.model.entities;
 
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.filespace.model.compoundrelations.UserFilespaceRelation;
 
 import javax.persistence.*;
 import javax.validation.constraints.*;
@@ -18,7 +19,7 @@ public class User extends Model {
 
     @NotNull
     @Pattern(regexp = "^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$",
-             message = "Illegal set of characters")
+             message = "Illegal set of characters or spacing characters repetition")
     @Size(min = 4, max = 50,
             message = "Should be within range of 4 to 50 characters")
     @Column(name = "username",

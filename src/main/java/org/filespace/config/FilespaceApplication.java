@@ -1,22 +1,14 @@
 package org.filespace.config;
 
 
-import org.filespace.model.User;
-import org.filespace.services.FileService;
-import org.filespace.services.IntegratedService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @SpringBootApplication//(exclude = {SecurityAutoConfiguration.class})
 @PropertySource("classpath:application.properties")

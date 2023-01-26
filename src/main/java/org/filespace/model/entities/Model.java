@@ -1,7 +1,8 @@
-package org.filespace.model;
+package org.filespace.model.entities;
+
+import org.filespace.model.EntityImplementation;
 
 import javax.persistence.*;
-import java.util.Objects;
 
 @MappedSuperclass
 public class Model implements EntityImplementation {

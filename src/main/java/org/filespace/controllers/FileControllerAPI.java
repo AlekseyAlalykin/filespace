@@ -1,27 +1,25 @@
 package org.filespace.controllers;
 
+import org.apache.tomcat.util.http.fileupload.FileItem;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
-import org.filespace.model.File;
+import org.filespace.model.entities.File;
 import org.filespace.security.SecurityUtil;
 import org.filespace.services.FileService;
 import org.filespace.services.IntegratedService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/files")
-public class APIFileController {
+public class FileControllerAPI {
 
     @Autowired
     IntegratedService integratedService;
@@ -56,6 +54,8 @@ public class APIFileController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Not a multipart request");
 
+        //List<FileItem> fileItems = request
+
         try {
             integratedService.saveFile(request, SecurityUtil.getCurrentUserUsername());
 
@@ -69,7 +69,11 @@ public class APIFileController {
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Internal server error: " + e.getMessage());
-        } catch (Exception e){
+        } catch (IllegalStateException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("File upload error: " + e.getMessage());
+        }
+        catch (Exception e){
             e.printStackTrace();
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -102,8 +106,6 @@ public class APIFileController {
 
         File file = (File) list.get(0);
 
-
-
         return ResponseEntity.status(HttpStatus.OK)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
                 .header(HttpHeaders.CONTENT_LENGTH, file.getSize().toString())
@@ -111,14 +113,42 @@ public class APIFileController {
     }
 
     @PatchMapping("/{id}")
-    public String patchFileInfo(@PathVariable String id){
+    public ResponseEntity patchFileInfo(@PathVariable String id,
+                                        @RequestParam(required = false) String comment){
+        try {
+            if (comment == null)
+                throw new NullPointerException("No parameter \"comment\" specified");
 
-        return "temp";
+            Long lId = Long.parseLong(id);
+            integratedService.updateFileComment(SecurityUtil.getCurrentUserUsername(),lId,comment);
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        }
+
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body("File info changed");
     }
 
     @DeleteMapping("/{id}")
-    public String deleteFile(@PathVariable String id){
+    public ResponseEntity deleteFile(@PathVariable String id){
+        try {
+            System.out.println("Начало");
+            Long lId = Long.parseLong(id);
+            integratedService.deleteFile(SecurityUtil.getCurrentUserUsername(), lId);
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(e.getMessage());
+        } catch (EntityNotFoundException e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        }
 
-        return "temp";
+        return ResponseEntity.status(HttpStatus.OK)
+                .body("File deleted");
     }
 }

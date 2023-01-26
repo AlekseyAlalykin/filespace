@@ -1,4 +1,4 @@
-package org.filespace.model;
+package org.filespace.model.compoundrelations;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
