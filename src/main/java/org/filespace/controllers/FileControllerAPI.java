@@ -1,12 +1,11 @@
 package org.filespace.controllers;
 
-import org.apache.tomcat.util.http.fileupload.FileItem;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.filespace.model.entities.File;
 import org.filespace.security.SecurityUtil;
+import org.filespace.services.DiskStorageService;
 import org.filespace.services.FileService;
-import org.filespace.services.IntegratedService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
@@ -22,14 +21,17 @@ import java.util.List;
 public class FileControllerAPI {
 
     @Autowired
-    IntegratedService integratedService;
+    private SecurityUtil securityUtil;
+
+    @Autowired
+    private FileService fileService;
 
     @GetMapping
     public ResponseEntity getFiles(){
         List<File> files = null;
 
         try {
-            files = integratedService.getUserFiles(SecurityUtil.getCurrentUserUsername());
+            files = fileService.getUserFiles(securityUtil.getCurrentUser());
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Something went wrong, try again later");
@@ -43,10 +45,10 @@ public class FileControllerAPI {
     public ResponseEntity postFile(HttpServletRequest request){
 
         long length = request.getContentLengthLong();
-        if (length == -1 || length > FileService.getMaxContentLength())
+        if (length == -1 || length > DiskStorageService.getMaxContentLength())
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Content length is unknown or exceeds set limit of: "
-                            + FileService.getMaxContentLength());
+                            + DiskStorageService.getMaxContentLength());
 
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
 
@@ -54,10 +56,10 @@ public class FileControllerAPI {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Not a multipart request");
 
-        //List<FileItem> fileItems = request
+        List<File> files;
 
         try {
-            integratedService.saveFile(request, SecurityUtil.getCurrentUserUsername());
+            files = fileService.saveFile(request, securityUtil.getCurrentUser());
 
         } catch (FileUploadException e) {
             e.printStackTrace();
@@ -82,7 +84,7 @@ public class FileControllerAPI {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body("Received");
+                .body(files);
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
@@ -92,7 +94,7 @@ public class FileControllerAPI {
         try {
             Long lId = Long.parseLong(id);
 
-            list = integratedService.sendFile(SecurityUtil.getCurrentUserUsername(), lId);
+            list = fileService.sendFile(securityUtil.getCurrentUser(), lId);
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(e.getMessage());
@@ -113,14 +115,12 @@ public class FileControllerAPI {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity patchFileInfo(@PathVariable String id,
-                                        @RequestParam(required = false) String comment){
+    public ResponseEntity updateFileInfo(@PathVariable String id,
+                                         @RequestParam(value = "comment", required = false) String comment,
+                                         @RequestParam(value = "filename", required = false) String filename){
         try {
-            if (comment == null)
-                throw new NullPointerException("No parameter \"comment\" specified");
-
             Long lId = Long.parseLong(id);
-            integratedService.updateFileComment(SecurityUtil.getCurrentUserUsername(),lId,comment);
+            fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, comment, filename);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(e.getMessage());
@@ -136,7 +136,7 @@ public class FileControllerAPI {
         try {
             System.out.println("Начало");
             Long lId = Long.parseLong(id);
-            integratedService.deleteFile(SecurityUtil.getCurrentUserUsername(), lId);
+            fileService.deleteFile(securityUtil.getCurrentUser(), lId);
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(e.getMessage());

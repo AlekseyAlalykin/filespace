@@ -1,140 +1,210 @@
 package org.filespace.services;
 
-import org.apache.commons.io.IOUtils;
-import org.springframework.core.io.*;
+import org.apache.commons.fileupload.FileItemIterator;
+import org.apache.commons.fileupload.FileItemStream;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload.util.Streams;
+import org.filespace.model.compoundrelations.UserFilespaceRelation;
+import org.filespace.model.entities.File;
+import org.filespace.model.entities.User;
+import org.filespace.repositories.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ResourceUtils;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.Properties;
+import javax.persistence.EntityNotFoundException;
+import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
+import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class FileService {
+    @Autowired
+    private FileRepository fileRepository;
 
-    private static String propertiesPath = "classpath:file-manager.properties";
+    @Autowired
+    private UserRepository userRepository;
 
-    private static String storageDirectory;
+    @Autowired
+    private FileFilespaceRelationRepository fileFilespaceRelationRepository;
 
-    private static String temporaryDirectory;
+    @Autowired
+    private DiskStorageService diskStorageService;
 
-    private static Long maxContentLength;
-
-    public static Long getMaxContentLength() {
-        return FileService.maxContentLength;
+    public List<File> getUserFiles(User user){
+        return user.getFiles();
     }
 
-    static {
+    @Transactional
+    public List<File> saveFile(HttpServletRequest request, User user) throws Exception {
+        ServletFileUpload upload = new ServletFileUpload();
+        FileItemIterator iterStream = upload.getItemIterator(request);
+
+        String comment = "";
+
+
+        boolean hasFiles = false;
+
+        List<File> files = new LinkedList<>();
+
+        while (iterStream.hasNext()) {
+            FileItemStream item = iterStream.next();
+            InputStream stream = item.openStream();
+
+            if (!item.isFormField()) {
+                File file = new File();
+
+                file.setPostDate(LocalDate.now());
+                file.setPostTime(LocalTime.now());
+                file.setNumberOfDownloads(0);
+                file.setSender(user);
+                file.setFileName(item.getName());
+
+                String tempFileLocation = "";
+                String md5 = "";
+
+                tempFileLocation = diskStorageService.temporarySaveFile(stream);
+                md5 = diskStorageService.md5FileHash(tempFileLocation);
+                diskStorageService.moveToStorageDirectory(md5, tempFileLocation);
+
+                file.setMd5Hash(md5);
+                file.setSize(diskStorageService.getFileSize(md5));
+
+                files.add(file);
+
+                hasFiles = true;
+            }
+            else {
+                if (item.getFieldName().equals("comment")){
+                    comment = Streams.asString(stream);
+                    if (comment.length() > 200)
+                        comment = comment.substring(0,201);
+                }
+            }
+
+            stream.close();
+        }
+
+        if (!hasFiles)
+            throw new IllegalStateException("No files attached");
+
+        for (File file: files){
+            file.setComment(comment);
+        }
+
         try {
-            FileInputStream fileInputStream = new FileInputStream(
-                    ResourceUtils.getFile(propertiesPath));
-            Properties properties = new Properties();
-            properties.load(fileInputStream);
+            fileRepository.saveAllAndFlush(files);
 
-            storageDirectory = properties.getProperty("storage-directory");
-            temporaryDirectory = properties.getProperty("temporary-directory");
-            maxContentLength = Long.parseLong(properties.getProperty("max-content-length"));
-
-            fileInputStream.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            for (File file: files){
+                diskStorageService.deleteFile(file.getMd5Hash());
+            }
 
-            storageDirectory = "C:/FileServiceRootDirectory";
-            temporaryDirectory = "C:/temp";
-            maxContentLength = 1024*1024*10L;
-        }
-    }
-
-    public FileService(){
-    }
-
-    public String getRootDirectory() {
-        return storageDirectory;
-    }
-
-    @Deprecated
-    public void temporarySaveFile(MultipartFile multipartFile) throws Exception{
-        File file = new File(temporaryDirectory + "/" + multipartFile.getOriginalFilename());
-        multipartFile.transferTo(file);
-    }
-
-    //Сохраняет файл на диск и возвращает md5 хэш сумму от файла
-    public String temporarySaveFile(InputStream stream) throws Exception {
-
-        String tempFilename = temporaryDirectory + "/" + stream.toString();
-
-        File targetFile = new File(tempFilename);
-        OutputStream outStream = new FileOutputStream(targetFile);
-
-        byte[] buffer = new byte[8 * 1024];
-        int bytesRead;
-
-        while ((bytesRead = stream.read(buffer)) != -1) {
-            outStream.write(buffer, 0, bytesRead);
+            throw e;
         }
 
-        IOUtils.closeQuietly(stream);
-        IOUtils.closeQuietly(outStream);
-
-        return tempFilename;
-
-        //String md5 = md5FileHash(tempFilename);
-
-        //moveToStorageDirectory(md5,tempFilename);
+        return files;
     }
 
-    //Находит хэш сумму от содержимого файла
-    public String md5FileHash(String path) throws Exception {
-        String hash;
+    @Transactional
+    public List<Object> sendFile(User user, Long fileId) throws Exception {
+        Optional<File> optional = fileRepository.findById(fileId);
 
-        try (InputStream is = Files.newInputStream(Paths.get(path))) {
-            hash = org.apache.commons.codec.digest.DigestUtils.md5Hex(is);
+        if (optional.isEmpty())
+            throw new EntityNotFoundException("No such file found");
+
+        File file = optional.get();
+
+        boolean hasRight = false;
+
+        if (user.getFiles().contains(file))
+            hasRight = true;
+
+        for (UserFilespaceRelation relation: user.getUserFilespaceRelations()) {
+            if (relation.getFilespace().getFiles().contains(file)) {
+                hasRight = true;
+                break;
+            }
         }
 
-        return hash;
+        if (!hasRight)
+            throw new IllegalAccessException("No access to the file");
+
+        file.setNumberOfDownloads(file.getNumberOfDownloads() + 1);
+
+        fileRepository.save(file);
+
+        InputStreamResource resource = diskStorageService.getFile(file.getMd5Hash());
+        List<Object> list = new LinkedList<>();
+        list.add(file);
+        list.add(resource);
+
+        fileRepository.flush();
+        return list;
     }
 
-    //Перемещает временный файл в директорию хранилища в соответствии с его md5
-    //Если по пути нет необходимых папок создает их
-    //Если файл с данной хэш суммой уже есть тогда файл не перезаписывается и удаляется временный файл
-    public void moveToStorageDirectory(String md5, String fullFilename) throws IOException{
-        String filePath = getPathFromMD5(md5);
+    public void updateFileInfo(User user, Long id, String comment, String filename) throws Exception {
+        Optional<File> optional = fileRepository.findById(id);
 
-        File file = new File(filePath);
-        if (file.exists()) {
-            Files.delete(Path.of(fullFilename));
-            return;
+        if (optional.isEmpty())
+            throw new EntityNotFoundException("No such file found");
+
+        File file = optional.get();
+
+        if (!user.getFiles().contains(file))
+            throw new IllegalAccessException("No authority over file");
+
+        if (comment != null) {
+            if (comment.length() > 200)
+                comment = comment.substring(0, 201);
+
+            file.setComment(comment);
         }
 
-        Files.createDirectories(Paths.get(filePath.substring(0,filePath.length() - 28)));
-        Files.move(Path.of(fullFilename), Path.of(filePath), StandardCopyOption.ATOMIC_MOVE);
+        if (filename != null){
+            if (filename.length() > 254)
+                throw new IllegalArgumentException("Illegal filename length");
+
+            Pattern pattern = Pattern.compile(
+                    "^(?!^(PRN|AUX|CLOCK\\$|NUL|CON|COM\\d|LPT\\d|\\..*)(\\..+)?$)[^\\x00-\\x1f\\\\?*:\\\";|/]+$",
+                    Pattern.CASE_INSENSITIVE);
+            Matcher matcher = pattern.matcher(filename);
+
+            if (!matcher.matches())
+                throw new IllegalArgumentException("Illegal filename");
+
+            file.setFileName(filename);
+        }
+
+        fileRepository.saveAndFlush(file);
     }
 
-    //Превращает md5 в путь
-    private String getPathFromMD5(String md5){
-        StringBuffer stringBuffer = new StringBuffer(md5);
-        stringBuffer.insert(2,'/');
-        stringBuffer.insert(5, '/');
+    @Transactional
+    public void deleteFile(User user, Long id) throws Exception{
+        Optional<File> optional = fileRepository.findById(id);
 
-        return storageDirectory + "/" + stringBuffer.toString();
+        if (optional.isEmpty())
+            throw new EntityNotFoundException("No such file found");
+
+        File file = optional.get();
+
+        if (!user.getFiles().contains(file))
+            throw new IllegalAccessException("No authority over file");
+
+        fileFilespaceRelationRepository.deleteByFile(file);
+
+        String md5 = file.getMd5Hash();
+        fileRepository.deleteById(id);
+
+        if (!fileRepository.existsByMd5Hash(md5))
+            diskStorageService.deleteFile(md5);
     }
 
-    public void deleteFile(String md5) throws IOException{
-        String path = getPathFromMD5(md5);
-        Files.deleteIfExists(Path.of(path));
-    }
-
-    public InputStreamResource getFile(String md5) throws Exception {
-        InputStreamResource resource = new InputStreamResource(
-                Files.newInputStream(
-                        Path.of(getPathFromMD5(md5))));
-
-        return resource;
-    }
-
-    public Long getFileSize(String md5) throws IOException{
-        Path path = Paths.get(getPathFromMD5(md5));
-        return Files.size(path);
-    }
 }

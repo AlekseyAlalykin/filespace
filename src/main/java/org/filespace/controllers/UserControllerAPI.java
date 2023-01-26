@@ -1,9 +1,8 @@
 package org.filespace.controllers;
 
-import org.filespace.model.compoundrelations.Role;
 import org.filespace.model.entities.User;
 import org.filespace.security.SecurityUtil;
-import org.filespace.services.IntegratedService;
+import org.filespace.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,17 +15,20 @@ import javax.persistence.EntityNotFoundException;
 public class UserControllerAPI {
 
     @Autowired
-    IntegratedService integratedService;
+    private SecurityUtil securityUtil;
+
+    @Autowired
+    private UserService userService;
 
     @PostMapping
-    public ResponseEntity postUser(@RequestParam("username") String username,
-                                   @RequestParam("password") String password,
-                                   @RequestParam("email") String email){
+    public ResponseEntity createUser(@RequestParam("username") String username,
+                                     @RequestParam("password") String password,
+                                     @RequestParam("email") String email){
 
-
+        User user;
 
         try {
-            integratedService.registerUser(username, password, email);
+            user = userService.registerUser(username, password, email);
 
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -35,7 +37,7 @@ public class UserControllerAPI {
 
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body("New user successfully created");
+                .body(user);
     }
 
     @GetMapping("/{id}")
@@ -45,7 +47,7 @@ public class UserControllerAPI {
         try {
             Long lId = Long.parseLong(id);
 
-            user = integratedService.getUserById(lId);
+            user = userService.getUserById(lId);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("No user with such id found");
@@ -56,15 +58,15 @@ public class UserControllerAPI {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity patchUser(@PathVariable String id,
-                                    @RequestParam(required = false) String username,
-                                    @RequestParam(required = false) String password,
-                                    @RequestParam(required = false) String email){
+    public ResponseEntity updateUser(@PathVariable String id,
+                                     @RequestParam(value = "username",required = false) String username,
+                                     @RequestParam(value = "password",required = false) String password,
+                                     @RequestParam(value = "email",required = false) String email){
 
         try {
             Long lId = Long.parseLong(id);
 
-            integratedService.updateUser(SecurityUtil.getCurrentUserUsername(), lId, username, password, email);
+            userService.updateUser(securityUtil.getCurrentUser(), lId, username, password, email);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -87,7 +89,7 @@ public class UserControllerAPI {
         try {
             Long lId = Long.parseLong(id);
 
-            integratedService.deleteUser(SecurityUtil.getCurrentUserUsername(), lId);
+            userService.deleteUser(securityUtil.getCurrentUser(), lId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());

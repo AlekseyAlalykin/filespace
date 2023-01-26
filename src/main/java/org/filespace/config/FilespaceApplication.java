@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @SpringBootApplication//(exclude = {SecurityAutoConfiguration.class})
 @PropertySource("classpath:application.properties")
@@ -19,9 +21,9 @@ public class FilespaceApplication {
 	public static void main(String[] args) {
 
 		/*
-		String message = "user_";
+		String message = ".pdf";
 		Pattern pattern = Pattern.compile(
-				"^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$",
+				"^(?!^(PRN|AUX|CLOCK\\$|NUL|CON|COM\\d|LPT\\d|\\..*)(\\..+)?$)[^\\x00-\\x1f\\\\?*:\\\";|/]+$",
 				Pattern.CASE_INSENSITIVE);
 		Matcher matcher = pattern.matcher(message);
 		System.out.println(matcher.matches());
@@ -29,9 +31,11 @@ public class FilespaceApplication {
 		 */
 
 
+
+
 		//AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(FilespaceContextConfig.class);
 
-		//FileService fileService = context.getBean(FileService.class);
+		//DiskStorageService fileService = context.getBean(DiskStorageService.class);
 
 		//System.out.println(fileService.getRootDirectory());
 		/*

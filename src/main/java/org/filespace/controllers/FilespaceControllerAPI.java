@@ -1,19 +1,20 @@
 package org.filespace.controllers;
 
+import org.filespace.model.compoundrelations.FileFilespaceRelation;
 import org.filespace.model.compoundrelations.Role;
+import org.filespace.model.compoundrelations.UserFilespaceRelation;
 import org.filespace.model.intermediate.FilespaceFileInfo;
 import org.filespace.model.intermediate.FilespaceRole;
 import org.filespace.model.entities.Filespace;
 import org.filespace.model.intermediate.FilespaceUserInfo;
 import org.filespace.security.SecurityUtil;
-import org.filespace.services.IntegratedService;
+import org.filespace.services.FilespaceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
-import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -21,7 +22,10 @@ import java.util.List;
 public class FilespaceControllerAPI {
 
     @Autowired
-    private IntegratedService integratedService;
+    private SecurityUtil securityUtil;
+
+    @Autowired
+    private FilespaceService filespaceService;
 
     @GetMapping
     public ResponseEntity getFilespaces(){
@@ -29,7 +33,7 @@ public class FilespaceControllerAPI {
         List<FilespaceRole> filespaces = null;
 
         try {
-            filespaces = integratedService.getUserFilespaces(SecurityUtil.getCurrentUserUsername());
+            filespaces = filespaceService.getUserFilespaces(securityUtil.getCurrentUser());
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Something went wrong, try again later");
@@ -41,12 +45,14 @@ public class FilespaceControllerAPI {
     }
 
     @PostMapping
-    public ResponseEntity postFilespace(@RequestParam(required = false) String title){
+    public ResponseEntity postFilespace(@RequestParam(value = "title", required = false) String title){
+        Filespace filespace;
+
         try {
             if (title == null)
                 throw new NullPointerException("No parameter \"title\" specified");
 
-            integratedService.createFilespace(SecurityUtil.getCurrentUserUsername(),title);
+            filespace = filespaceService.createFilespace(securityUtil.getCurrentUser(), title);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -54,7 +60,7 @@ public class FilespaceControllerAPI {
         }
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body("New filespace created");
+                .body(filespace);
     }
 
     @GetMapping("/{id}")
@@ -63,7 +69,7 @@ public class FilespaceControllerAPI {
 
         try {
             Long lId = Long.parseLong(id);
-            filespace = integratedService.getFilespaceById(SecurityUtil.getCurrentUserUsername(), lId);
+            filespace = filespaceService.getFilespaceById(securityUtil.getCurrentUser(), lId);
 
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -84,14 +90,14 @@ public class FilespaceControllerAPI {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity patchFilespace(@PathVariable String id,
-                                         @RequestParam(required = false) String title){
+    public ResponseEntity updateFilespace(@PathVariable String id,
+                                         @RequestParam(value = "title",required = false) String title){
         try {
             if (title == null)
                 throw new NullPointerException("No parameter \"title\" specified");
 
             Long lId = Long.parseLong(id);
-            integratedService.updateFilespaceTitle(SecurityUtil.getCurrentUserUsername(),lId,title);
+            filespaceService.updateFilespaceTitle(securityUtil.getCurrentUser(),lId,title);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -113,7 +119,7 @@ public class FilespaceControllerAPI {
     public ResponseEntity deleteFilespace(@PathVariable String id){
         try{
             Long lId = Long.parseLong(id);
-            integratedService.deleteFilespace(SecurityUtil.getCurrentUserUsername(), lId);
+            filespaceService.deleteFilespace(securityUtil.getCurrentUser(), lId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -134,8 +140,9 @@ public class FilespaceControllerAPI {
     }
 
     @PostMapping("/{filespaceId}/files")
-    public ResponseEntity postFileToFilespace(@PathVariable String filespaceId,
-                                              @RequestParam(required = false) String fileId){
+    public ResponseEntity attachFileToFilespace(@PathVariable String filespaceId,
+                                                @RequestParam(value = "fileId", required = false) String fileId){
+        FileFilespaceRelation relation;
 
         try {
             if (fileId == null)
@@ -144,7 +151,7 @@ public class FilespaceControllerAPI {
             Long lFilespaceId = Long.parseLong(filespaceId);
             Long lFileId = Long.parseLong(fileId);
 
-            integratedService.addFileToFilespace(SecurityUtil.getCurrentUserUsername(),lFilespaceId,lFileId);
+            relation = filespaceService.attachFileToFilespace(securityUtil.getCurrentUser(),lFilespaceId,lFileId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -159,7 +166,7 @@ public class FilespaceControllerAPI {
         }
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body("File added to filespace");
+                .body(relation);
 
     }
 
@@ -170,7 +177,7 @@ public class FilespaceControllerAPI {
         try {
             Long lId = Long.parseLong(id);
 
-            list = integratedService.getFilesFromFilespace(SecurityUtil.getCurrentUserUsername(), lId);
+            list = filespaceService.getFilesFromFilespace(securityUtil.getCurrentUser(), lId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -195,7 +202,7 @@ public class FilespaceControllerAPI {
         try {
             Long lId = Long.parseLong(id);
 
-            list = integratedService.getUsersOfFilespace(SecurityUtil.getCurrentUserUsername(), lId);
+            list = filespaceService.getUsersOfFilespace(securityUtil.getCurrentUser(), lId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -214,9 +221,10 @@ public class FilespaceControllerAPI {
     }
 
     @PostMapping("/{id}/users")
-    public ResponseEntity postUsersToFilespace(@PathVariable String id,
-                                               @RequestParam(required = false) String userId,
-                                               @RequestParam(required = false) String role){
+    public ResponseEntity addUsersToFilespace(@PathVariable String id,
+                                              @RequestParam(value = "userId", required = false) String userId,
+                                              @RequestParam(value = "role", required = false) String role){
+        UserFilespaceRelation relation;
 
         try {
             if (userId == null)
@@ -229,7 +237,7 @@ public class FilespaceControllerAPI {
             Long lUserId = Long.parseLong(userId);
             Role userRole = Role.valueOf(role.toUpperCase());
 
-            integratedService.addUserToFilespace(SecurityUtil.getCurrentUserUsername(), lFilespaceId, lUserId, userRole);
+            relation = filespaceService.addUserToFilespace(securityUtil.getCurrentUser(), lFilespaceId, lUserId, userRole);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -244,13 +252,13 @@ public class FilespaceControllerAPI {
         }
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body("User added to filespace");
+                .body(relation);
     }
 
     @DeleteMapping("/{filespaceId}/users/{userId}")
     public ResponseEntity deleteUserFromFilespace(@PathVariable String filespaceId,
-                                                  @PathVariable String userId,
-                                                  @RequestParam(required = false) String deleteFiles){
+                                                  @PathVariable(value = "userId") String userId,
+                                                  @RequestParam(value = "deleteFiles",required = false) String deleteFiles){
         try {
             Long lFilespaceId = Long.parseLong(filespaceId);
             Long lUserId = Long.parseLong(userId);
@@ -258,8 +266,7 @@ public class FilespaceControllerAPI {
 
             System.out.println(bDeleteFiles);
 
-            integratedService.deleteUserFromFilespace(SecurityUtil.getCurrentUserUsername(),
-                    lFilespaceId,lUserId, bDeleteFiles);
+            filespaceService.deleteUserFromFilespace(securityUtil.getCurrentUser(), lFilespaceId,lUserId, bDeleteFiles);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -278,15 +285,14 @@ public class FilespaceControllerAPI {
     }
 
     @DeleteMapping("/{filespaceId}/files/{fileId}")
-    public ResponseEntity deleteFileFromFilespace(@PathVariable String filespaceId,
-                                                  @PathVariable String fileId){
+    public ResponseEntity deleteFileFromFilespace(@PathVariable(value = "filespaceId") String filespaceId,
+                                                  @PathVariable(value = "fileId") String fileId){
 
         try {
             Long lFilespaceId = Long.parseLong(filespaceId);
             Long lFileId = Long.parseLong(fileId);
-            String requestSender = SecurityUtil.getCurrentUserUsername();
 
-            integratedService.deleteFileFromFilespace(requestSender,lFilespaceId,lFileId);
+            filespaceService.deleteFileFromFilespace(securityUtil.getCurrentUser(),lFilespaceId,lFileId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -305,16 +311,15 @@ public class FilespaceControllerAPI {
     }
 
     @PatchMapping("/{filespaceId}/users/{userId}")
-    public ResponseEntity patchUserRole(@PathVariable String filespaceId,
-                                        @PathVariable String userId,
-                                        @RequestParam String role){
+    public ResponseEntity updateUserRole(@PathVariable(value = "filespaceId") String filespaceId,
+                                         @PathVariable(value = "userId") String userId,
+                                         @RequestParam(value = "role") String role){
         try {
             Long lFilespaceId = Long.parseLong(filespaceId);
             Long lUserId = Long.parseLong(userId);
             Role newRole = Role.valueOf(role);
 
-            String requestSender = SecurityUtil.getCurrentUserUsername();
-            integratedService.patchUserRole(requestSender,lFilespaceId,lUserId, newRole);
+            filespaceService.updateUserRole(securityUtil.getCurrentUser(),lFilespaceId,lUserId, newRole);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -331,34 +336,4 @@ public class FilespaceControllerAPI {
         return ResponseEntity.status(HttpStatus.OK)
                 .body("Role changed");
     }
-
-
-
-
-
-
-
-
-
-
-
-    //Думаю не надо либо доделать поиск filespace и в нем юзера или файла
-    /*
-    @GetMapping("/{filespaceId}/files/{fileId}")
-    public ResponseEntity getFileFromFilespace(@PathVariable String filespaceId, @PathVariable String fileId){
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Location",  "/api/files/" + fileId);
-
-        return new ResponseEntity<String>(headers,HttpStatus.FOUND);
-    }
-
-    @GetMapping("/{filespaceId}/files/{userId}")
-    public ResponseEntity getUserFromFilespace(@PathVariable String filespaceId, @PathVariable String userId){
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Location",  "/api/users/" + userId);
-
-        return new ResponseEntity<String>(headers,HttpStatus.FOUND);
-    }
-
-     */
 }
