@@ -1,6 +1,7 @@
 package org.filespace.services;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.springframework.core.io.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ResourceUtils;
@@ -55,40 +56,48 @@ public class DiskStorageService {
 
     @Deprecated
     public void temporarySaveFile(MultipartFile multipartFile) throws Exception{
-        File file = new File(temporaryDirectory + "/" + multipartFile.getOriginalFilename());
+        File file = new File( getTemporaryFilePath(multipartFile.getOriginalFilename() ));
         multipartFile.transferTo(file);
     }
 
     //Сохраняет файл на диск и возвращает md5 хэш сумму от файла
     public String temporarySaveFile(InputStream stream) throws Exception {
+        String tempFilename = stream.toString();
 
-        String tempFilename = temporaryDirectory + "/" + stream.toString();
+        File targetFile = new File(getTemporaryFilePath(stream.toString()));
 
-        File targetFile = new File(tempFilename);
-        OutputStream outStream = new FileOutputStream(targetFile);
+        OutputStream outStream = null;
 
-        byte[] buffer = new byte[8 * 1024];
-        int bytesRead;
+        try {
+            outStream = new FileOutputStream(targetFile);
 
-        while ((bytesRead = stream.read(buffer)) != -1) {
-            outStream.write(buffer, 0, bytesRead);
+            byte[] buffer = new byte[8 * 1024];
+            int bytesRead;
+
+            while ((bytesRead = stream.read(buffer)) != -1) {
+                outStream.write(buffer, 0, bytesRead);
+            }
+
+            IOUtils.closeQuietly(stream);
+            IOUtils.closeQuietly(outStream);
+        } catch (Exception e){
+            e.printStackTrace();
+
+            IOUtils.closeQuietly(stream);
+            IOUtils.closeQuietly(outStream);
+
+            deleteTemporaryFile(stream.toString());
+            throw new FileUploadException();
         }
 
-        IOUtils.closeQuietly(stream);
-        IOUtils.closeQuietly(outStream);
-
         return tempFilename;
-
-        //String md5 = md5FileHash(tempFilename);
-
-        //moveToStorageDirectory(md5,tempFilename);
     }
 
     //Находит хэш сумму от содержимого файла
-    public String md5FileHash(String path) throws Exception {
+    public String md5FileHash(String filename) throws Exception {
         String hash;
 
-        try (InputStream is = Files.newInputStream(Paths.get(path))) {
+        try (InputStream is = Files.newInputStream(Paths.get(getTemporaryFilePath(filename)))) {
             hash = org.apache.commons.codec.digest.DigestUtils.md5Hex(is);
         }
 
@@ -98,31 +107,27 @@ public class DiskStorageService {
     //Перемещает временный файл в директорию хранилища в соответствии с его md5
     //Если по пути нет необходимых папок создает их
     //Если файл с данной хэш суммой уже есть тогда файл не перезаписывается и удаляется временный файл
-    public void moveToStorageDirectory(String md5, String fullFilename) throws IOException{
+    public void moveToStorageDirectory(String md5, String filename) throws Exception {
         String filePath = getPathFromMD5(md5);
 
         File file = new File(filePath);
-        if (file.exists()) {
-            Files.delete(Path.of(fullFilename));
-            return;
+        try {
+            if (file.exists()) {
+                Files.delete(Path.of(getTemporaryFilePath(filename)));
+                return;
+            }
+        } catch (Exception e){
+            e.printStackTrace();
         }
 
-        Files.createDirectories(Paths.get(filePath.substring(0,filePath.length() - 28)));
-        Files.move(Path.of(fullFilename), Path.of(filePath), StandardCopyOption.ATOMIC_MOVE);
-    }
+        try {
+            Files.createDirectories(Paths.get(filePath.substring(0, filePath.length() - 28)));
+            Files.move(Path.of(getTemporaryFilePath(filename)), Path.of(filePath), StandardCopyOption.ATOMIC_MOVE);
 
-    //Превращает md5 в путь
-    private String getPathFromMD5(String md5){
-        StringBuffer stringBuffer = new StringBuffer(md5);
-        stringBuffer.insert(2,'/');
-        stringBuffer.insert(5, '/');
-
-        return storageDirectory + "/" + stringBuffer.toString();
-    }
-
-    public void deleteFile(String md5) throws IOException{
-        String path = getPathFromMD5(md5);
-        Files.deleteIfExists(Path.of(path));
+        } catch (Exception e){
+            e.printStackTrace();
+             throw new Exception(e.getMessage());
+        }
     }
 
     public InputStreamResource getFile(String md5) throws Exception {
@@ -136,5 +141,28 @@ public class DiskStorageService {
     public Long getFileSize(String md5) throws IOException{
         Path path = Paths.get(getPathFromMD5(md5));
         return Files.size(path);
+    }
+
+    //Превращает md5 в путь
+    private String getPathFromMD5(String md5){
+        StringBuffer stringBuffer = new StringBuffer(md5);
+        stringBuffer.insert(2,'/');
+        stringBuffer.insert(5, '/');
+
+        return storageDirectory + "/" + stringBuffer.toString();
+    }
+
+    private String getTemporaryFilePath(String filename){
+        return temporaryDirectory + "/" + filename;
+    }
+
+    public void deleteFile(String md5) throws IOException {
+        String path = getPathFromMD5(md5);
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    private void deleteTemporaryFile(String filename) throws IOException{
+        String path = getTemporaryFilePath(filename);
+        Files.deleteIfExists(Path.of(path));
     }
 }

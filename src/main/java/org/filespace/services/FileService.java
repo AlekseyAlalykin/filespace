@@ -2,6 +2,7 @@ package org.filespace.services;
 
 import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.FileItemStream;
+import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.fileupload.util.Streams;
 import org.filespace.model.compoundrelations.UserFilespaceRelation;
@@ -43,7 +44,7 @@ public class FileService {
     }
 
     @Transactional
-    public List<File> saveFile(HttpServletRequest request, User user) throws Exception {
+    public List<File> saveFileFromUser(HttpServletRequest request, User user) throws Exception {
         ServletFileUpload upload = new ServletFileUpload();
         FileItemIterator iterStream = upload.getItemIterator(request);
 
@@ -70,9 +71,20 @@ public class FileService {
                 String tempFileLocation = "";
                 String md5 = "";
 
-                tempFileLocation = diskStorageService.temporarySaveFile(stream);
-                md5 = diskStorageService.md5FileHash(tempFileLocation);
-                diskStorageService.moveToStorageDirectory(md5, tempFileLocation);
+                try {
+                    tempFileLocation = diskStorageService.temporarySaveFile(stream);
+                    md5 = diskStorageService.md5FileHash(tempFileLocation);
+                } catch (Exception e){
+                    e.printStackTrace();
+
+                    throw new FileUploadException(e.getMessage());
+                }
+
+                try {
+                    diskStorageService.moveToStorageDirectory(md5, tempFileLocation);
+                } catch (Exception e){
+                    throw new Exception(e.getMessage());
+                }
 
                 file.setMd5Hash(md5);
                 file.setSize(diskStorageService.getFileSize(md5));
@@ -113,8 +125,45 @@ public class FileService {
         return files;
     }
 
+    public File copyFile(User user, Long fileId) throws Exception {
+        Optional<File> optional = fileRepository.findById(fileId);
+
+        if (optional.isEmpty())
+            throw new EntityNotFoundException("No such file found");
+
+        File originalFile = optional.get();
+
+        if (user.getFiles().contains(originalFile))
+            throw new IllegalAccessException("Can't copy own file");
+
+        boolean hasRight = false;
+
+        for (UserFilespaceRelation relation: user.getUserFilespaceRelations()) {
+            if (relation.getFilespace().getFiles().contains(originalFile)) {
+                hasRight = true;
+                break;
+            }
+        }
+
+        if (!hasRight)
+            throw new IllegalAccessException("No access to the file");
+
+        File copy = new File(user,
+                originalFile.getFileName(),
+                originalFile.getSize(),
+                LocalDate.now(),
+                LocalTime.now(),
+                0,
+                originalFile.getComment(),
+                originalFile.getMd5Hash());
+
+        fileRepository.saveAndFlush(copy);
+
+        return copy;
+    }
+
     @Transactional
-    public List<Object> sendFile(User user, Long fileId) throws Exception {
+    public List<Object> sendFileToUser(User user, Long fileId) throws Exception {
         Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())
@@ -150,8 +199,8 @@ public class FileService {
         return list;
     }
 
-    public void updateFileInfo(User user, Long id, String comment, String filename) throws Exception {
-        Optional<File> optional = fileRepository.findById(id);
+    public void updateFileInfo(User user, Long fileId, String comment, String filename) throws Exception {
+        Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())
             throw new EntityNotFoundException("No such file found");
@@ -187,8 +236,8 @@ public class FileService {
     }
 
     @Transactional
-    public void deleteFile(User user, Long id) throws Exception{
-        Optional<File> optional = fileRepository.findById(id);
+    public void deleteFile(User user, Long fileId) throws Exception{
+        Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())
             throw new EntityNotFoundException("No such file found");
@@ -201,7 +250,7 @@ public class FileService {
         fileFilespaceRelationRepository.deleteByFile(file);
 
         String md5 = file.getMd5Hash();
-        fileRepository.deleteById(id);
+        fileRepository.deleteById(fileId);
 
         if (!fileRepository.existsByMd5Hash(md5))
             diskStorageService.deleteFile(md5);

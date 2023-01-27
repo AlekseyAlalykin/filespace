@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
 
 @RestController
@@ -52,34 +53,57 @@ public class FileControllerAPI {
 
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
 
-        if (!isMultipart)
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Not a multipart request");
-
         List<File> files;
 
-        try {
-            files = fileService.saveFile(request, securityUtil.getCurrentUser());
+        //Если мултипарт то загрузка нового файла иначе копирование
+        if (isMultipart){
+            try {
+                files = fileService.saveFileFromUser(request, securityUtil.getCurrentUser());
 
-        } catch (FileUploadException e) {
-            e.printStackTrace();
+            } catch (FileUploadException e) {
+                e.printStackTrace();
 
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("File upload error: " + e.getMessage());
-        } catch (IOException e) {
-            e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("File upload error: " + e.getMessage());
+            } catch (IOException e) {
+                e.printStackTrace();
 
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal server error: " + e.getMessage());
-        } catch (IllegalStateException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("File upload error: " + e.getMessage());
-        }
-        catch (Exception e){
-            e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Internal server error: " + e.getMessage());
+            } catch (IllegalStateException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("File upload error: " + e.getMessage());
+            } catch (Exception e) {
+                e.printStackTrace();
 
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal server error: " + e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Internal server error: " + e.getMessage());
+            }
+
+        } else {
+            String fileIdParam = request.getParameter("fileId");
+
+            if (fileIdParam == null)
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("No fileId parameter");
+
+            try {
+                Long fileId = Long.parseLong(fileIdParam);
+
+                File file = fileService.copyFile(securityUtil.getCurrentUser(),fileId);
+
+                files = new LinkedList<>();
+                files.add(file);
+            }  catch (IllegalAccessException e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(e.getMessage());
+            } catch (Exception e) {
+                e.printStackTrace();
+
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Internal server error: " + e.getMessage());
+            }
         }
 
         return ResponseEntity
@@ -94,7 +118,7 @@ public class FileControllerAPI {
         try {
             Long lId = Long.parseLong(id);
 
-            list = fileService.sendFile(securityUtil.getCurrentUser(), lId);
+            list = fileService.sendFileToUser(securityUtil.getCurrentUser(), lId);
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(e.getMessage());
