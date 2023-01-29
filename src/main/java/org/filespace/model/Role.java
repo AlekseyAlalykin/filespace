@@ -1,4 +1,4 @@
-package org.filespace.model.compoundrelations;
+package org.filespace.model;
 
 public enum Role {
     CREATOR(3),

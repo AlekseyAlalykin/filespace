@@ -1,5 +1,6 @@
 package org.filespace.services;
 
+import org.filespace.model.Role;
 import org.filespace.model.compoundrelations.*;
 import org.filespace.model.entities.File;
 import org.filespace.model.entities.Filespace;
@@ -212,8 +213,7 @@ public class FilespaceService {
         return userFilespaceRelationRepository.getFilespaceUsersById(id);
     }
 
-    public UserFilespaceRelation addUserToFilespace(User requester, Long filespaceId, Long userId, Role role) throws Exception{
-
+    public UserFilespaceRelation attachUserToFilespace(User requester, Long filespaceId, Long userId, Role role) throws Exception{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
@@ -228,19 +228,24 @@ public class FilespaceService {
 
         User targetedUser = optionalUser.get();
 
-        Optional<UserFilespaceRelation> optionalRelation = userFilespaceRelationRepository.findById(
+        Optional<UserFilespaceRelation> optionalRequesterRelation = userFilespaceRelationRepository.findById(
                 new UserFilespaceKey(requester.getId(),filespaceId));
 
-        if (optionalRelation.isEmpty())
+        if (optionalRequesterRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
 
-        Role requesterRole = optionalRelation.get().getRole();
+        Role requesterRole = optionalRequesterRelation.get().getRole();
 
-        if (requesterRole != Role.CREATOR)
+        if (requesterRole.getWeight() < Role.ADMINISTRATOR.getWeight())
             throw new IllegalAccessException("No authority over filespace");
 
-        if (role == Role.CREATOR)
-            throw new IllegalArgumentException("Only singular CREATOR role per filespace allowed");
+        Optional<UserFilespaceRelation> optionalTargetRelation = userFilespaceRelationRepository.findById(
+                new UserFilespaceKey(targetedUser.getId(),filespaceId));
+        if (optionalTargetRelation.isPresent())
+            throw new IllegalArgumentException("User already attached to filespace");
+
+        if ((requesterRole == Role.ADMINISTRATOR) && requesterRole.getWeight() <= role.getWeight())
+            throw new IllegalArgumentException("Can't add user higher than CONTRIBUTOR");
 
         UserFilespaceRelation relation = new UserFilespaceRelation();
 
@@ -254,7 +259,7 @@ public class FilespaceService {
     }
 
     @Transactional
-    public void deleteUserFromFilespace(User requester, Long filespaceId, Long userId, Boolean deleteFiles) throws Exception{
+    public void detachUserFromFilespace(User requester, Long filespaceId, Long userId, Boolean deleteFiles) throws Exception{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
@@ -275,9 +280,9 @@ public class FilespaceService {
         if (optionalRequesterFilespaceRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
 
-        UserFilespaceRelation requesterRelation = optionalRequesterFilespaceRelation.get();
+        Role requesterRole = optionalRequesterFilespaceRelation.get().getRole();
 
-        if (requesterRelation.getRole() != Role.CREATOR && !requester.equals(targetedUser))
+        if (requesterRole.getWeight() < Role.ADMINISTRATOR.getWeight() && !requester.equals(targetedUser))
             throw new IllegalAccessException("No authority to remove user");
 
         Optional<UserFilespaceRelation> optionalTargetedUserRelation =
@@ -285,6 +290,13 @@ public class FilespaceService {
 
         if (optionalTargetedUserRelation.isEmpty())
             throw new IllegalArgumentException("User isn't in filespace");
+
+        UserFilespaceRelation targetedUserRelation = optionalTargetedUserRelation.get();
+
+        if (requesterRole.equals(Role.ADMINISTRATOR) &&
+                targetedUserRelation.getRole().getWeight() >= requesterRole.getWeight() &&
+                !requester.equals(targetedUser))
+            throw new IllegalArgumentException("Can only remove users with roles CONTRIBUTOR or SPECTATOR");
 
         if (deleteFiles)
             fileFilespaceRelationRepository.deleteFilesFromFilespaceByUserId(userId);
@@ -295,9 +307,7 @@ public class FilespaceService {
 
         if (usersLeft == 0) {
             fileFilespaceRelationRepository.deleteAllByFilespace(filespace);
-
             fileFilespaceRelationRepository.flush();
-
             filespaceRepository.delete(filespace);
         }
 
@@ -306,13 +316,14 @@ public class FilespaceService {
         filespaceRepository.flush();
     }
 
-    public void deleteFileFromFilespace(User requester, Long filespaceId, Long fileId) throws Exception{
+    public void detachFileFromFilespace(User requester, Long filespaceId, Long fileId) throws Exception{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
             throw new EntityNotFoundException("No such filespace");
 
         Optional<File> optionalFile = fileRepository.findById(fileId);
+
         if (optionalFile.isEmpty())
             throw new EntityNotFoundException("No such file");
 
@@ -334,7 +345,7 @@ public class FilespaceService {
 
         FileFilespaceRelation fileFilespaceRelation = optionalFileFilespaceRelation.get();
 
-        if (requesterRelation.getRole() != Role.CREATOR && !file.getSender().equals(requester))
+        if ((requesterRelation.getRole().getWeight() < Role.ADMINISTRATOR.getWeight()) && !file.getSender().equals(requester))
             throw new IllegalAccessException("No authority to remove the file");
 
         fileFilespaceRelationRepository.delete(fileFilespaceRelation);
@@ -359,9 +370,9 @@ public class FilespaceService {
         if (optionalRequesterFilespaceRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
 
-        UserFilespaceRelation requesterRelation = optionalRequesterFilespaceRelation.get();
+        Role requesterRole = optionalRequesterFilespaceRelation.get().getRole();
 
-        if (requesterRelation.getRole().equals(Role.CONTRIBUTOR) || requesterRelation.getRole().equals(Role.SPECTATOR))
+        if (requesterRole.equals(Role.CONTRIBUTOR) || requesterRole.equals(Role.SPECTATOR))
             throw new IllegalAccessException("No authority to change role");
 
         Optional<UserFilespaceRelation> optionalTargetedUserRelation =
@@ -372,14 +383,10 @@ public class FilespaceService {
 
         UserFilespaceRelation targetedUserRelation = optionalTargetedUserRelation.get();
 
-        if (targetedUserRelation.getRole().equals(Role.CREATOR))
-            throw new IllegalAccessException("CREATOR role can't be changed");
-
         if (requester.equals(target))
             throw new IllegalArgumentException("Can't change self role");
 
-
-        if (requesterRelation.getRole().equals(Role.ADMINISTRATOR) && (Role.ADMINISTRATOR.getWeight() <= role.getWeight()))
+        if (requesterRole.equals(Role.ADMINISTRATOR) && (Role.ADMINISTRATOR.getWeight() <= role.getWeight()))
             throw new IllegalArgumentException("No authority to attach given role");
 
         targetedUserRelation.setRole(role);

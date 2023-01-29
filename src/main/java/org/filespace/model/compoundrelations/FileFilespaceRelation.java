@@ -1,6 +1,8 @@
 package org.filespace.model.compoundrelations;
 
 import javax.persistence.*;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.filespace.model.EntityImplementation;
 import org.filespace.model.entities.File;
 import org.filespace.model.entities.Filespace;
@@ -15,6 +17,7 @@ import java.time.LocalTime;
 @Table(name = "files_filespaces")
 public class FileFilespaceRelation implements EntityImplementation {
 
+    @JsonIgnore
     @NotNull
     @EmbeddedId
     private FileFilespaceKey fileFilespaceKey = new FileFilespaceKey();

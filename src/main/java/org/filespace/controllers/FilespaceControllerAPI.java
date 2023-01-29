@@ -1,7 +1,7 @@
 package org.filespace.controllers;
 
 import org.filespace.model.compoundrelations.FileFilespaceRelation;
-import org.filespace.model.compoundrelations.Role;
+import org.filespace.model.Role;
 import org.filespace.model.compoundrelations.UserFilespaceRelation;
 import org.filespace.model.intermediate.FilespaceFileInfo;
 import org.filespace.model.intermediate.FilespaceRole;
@@ -237,7 +237,7 @@ public class FilespaceControllerAPI {
             Long lUserId = Long.parseLong(userId);
             Role userRole = Role.valueOf(role.toUpperCase());
 
-            relation = filespaceService.addUserToFilespace(securityUtil.getCurrentUser(), lFilespaceId, lUserId, userRole);
+            relation = filespaceService.attachUserToFilespace(securityUtil.getCurrentUser(), lFilespaceId, lUserId, userRole);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -266,7 +266,7 @@ public class FilespaceControllerAPI {
 
             System.out.println(bDeleteFiles);
 
-            filespaceService.deleteUserFromFilespace(securityUtil.getCurrentUser(), lFilespaceId,lUserId, bDeleteFiles);
+            filespaceService.detachUserFromFilespace(securityUtil.getCurrentUser(), lFilespaceId,lUserId, bDeleteFiles);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -292,7 +292,7 @@ public class FilespaceControllerAPI {
             Long lFilespaceId = Long.parseLong(filespaceId);
             Long lFileId = Long.parseLong(fileId);
 
-            filespaceService.deleteFileFromFilespace(securityUtil.getCurrentUser(),lFilespaceId,lFileId);
+            filespaceService.detachFileFromFilespace(securityUtil.getCurrentUser(),lFilespaceId,lFileId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
@@ -317,7 +317,7 @@ public class FilespaceControllerAPI {
         try {
             Long lFilespaceId = Long.parseLong(filespaceId);
             Long lUserId = Long.parseLong(userId);
-            Role newRole = Role.valueOf(role);
+            Role newRole = Role.valueOf(role.toUpperCase());
 
             filespaceService.updateUserRole(securityUtil.getCurrentUser(),lFilespaceId,lUserId, newRole);
         } catch (EntityNotFoundException e) {

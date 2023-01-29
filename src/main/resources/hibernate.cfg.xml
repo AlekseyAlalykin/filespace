@@ -14,9 +14,9 @@
         <property name="current_session_context_class">thread</property>
         <property name="default_schema">public</property>
 
-        <mapping class="org.filespace.model.User"/>
-        <mapping class="org.filespace.model.File"/>
-        <mapping class="org.filespace.model.Filespace"/>
-        <mapping class="org.filespace.model.Log"/>
+        <mapping class="org.filespace.model.entities.User"/>
+        <mapping class="org.filespace.model.entities.File"/>
+        <mapping class="org.filespace.model.entities.Filespace"/>
+        <mapping class="org.filespace.model.entities.Log"/>
     </session-factory>
 </hibernate-configuration>
