@@ -2,7 +2,7 @@ package org.filespace.model.compoundrelations;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.filespace.model.EntityImplementation;
-import org.filespace.model.Role;
+import org.filespace.model.entities.Role;
 import org.filespace.model.entities.Filespace;
 import org.filespace.model.entities.User;
 

@@ -7,16 +7,31 @@ import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 @Configuration
 @ComponentScan("org.filespace")
 public class FilespaceContextConfig {
 
-
     @Bean
     public Hibernate5Module datatypeHibernateModule() {
         return new Hibernate5Module();
     }
+
+    /*
+    @Bean
+    public WebMvcConfigurer corsConfig(){
+        return new WebMvcConfigurerAdapter() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/api/**");
+            }
+        };
+    }
+
+    */
 
     /*
     @Autowired

@@ -1,4 +1,4 @@
-package org.filespace.threads;
+package org.filespace.services.threads;
 
 import org.filespace.services.DiskStorageService;
 

@@ -1,6 +1,7 @@
 package org.filespace.config;
 
 
+import org.filespace.services.EmailHandler;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -8,6 +9,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,7 +49,16 @@ public class FilespaceApplication {
 
 		//SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
 
+		/*
+		EmailHandler emailHandler = new EmailHandler();
 
+		try {
+			emailHandler.sendMail("lepi33@yandex.ru", "Тестовое сообщение", "Это тестовое сообщение переданное через javax.mail");
+		} catch (IOException e){
+			e.printStackTrace();
+		}
+
+		 */
 
 		SpringApplication.run(FilespaceApplication.class, args);
 	}

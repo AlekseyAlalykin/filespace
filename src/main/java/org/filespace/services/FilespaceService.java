@@ -1,6 +1,6 @@
 package org.filespace.services;
 
-import org.filespace.model.Role;
+import org.filespace.model.entities.Role;
 import org.filespace.model.compoundrelations.*;
 import org.filespace.model.entities.File;
 import org.filespace.model.entities.Filespace;

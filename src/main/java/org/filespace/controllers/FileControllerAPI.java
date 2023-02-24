@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/api/files")
 public class FileControllerAPI {
@@ -107,7 +108,7 @@ public class FileControllerAPI {
         }
 
         return ResponseEntity
-                .status(HttpStatus.OK)
+                .status(HttpStatus.CREATED)
                 .body(files);
     }
 
@@ -158,7 +159,6 @@ public class FileControllerAPI {
     @DeleteMapping("/{id}")
     public ResponseEntity deleteFile(@PathVariable String id){
         try {
-            System.out.println("Начало");
             Long lId = Long.parseLong(id);
             fileService.deleteFile(securityUtil.getCurrentUser(), lId);
         } catch (IllegalAccessException e){

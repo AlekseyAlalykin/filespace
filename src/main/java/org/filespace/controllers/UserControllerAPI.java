@@ -4,15 +4,21 @@ import org.filespace.model.entities.User;
 import org.filespace.security.SecurityUtil;
 import org.filespace.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/api/users")
 public class UserControllerAPI {
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Autowired
     private SecurityUtil securityUtil;
@@ -37,6 +43,20 @@ public class UserControllerAPI {
 
 
         return ResponseEntity.status(HttpStatus.CREATED)
+                .body(user);
+    }
+
+    @GetMapping
+    public ResponseEntity getCurrentUser(){
+        User user;
+        try {
+            user = userService.getCurrentUser();
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
                 .body(user);
     }
 
@@ -104,6 +124,60 @@ public class UserControllerAPI {
         }
 
         return ResponseEntity.status(HttpStatus.OK).body("OK");
+    }
+
+    @GetMapping("/registration/{token}")
+    public ResponseEntity confirmRegistration(@PathVariable String token){
+        try {
+            userService.confirmRegistration(token);
+        } catch (IllegalArgumentException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        }catch (EntityNotFoundException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body("Confirmed");
+    }
+
+    @GetMapping("/deletion/{token}")
+    public ResponseEntity confirmDeletion(@PathVariable String token){
+        try {
+            userService.confirmDeletion(token);
+        } catch (IllegalArgumentException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        }catch (EntityNotFoundException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body("Deleted");
+    }
+
+    @GetMapping("/email-change/{token}")
+    public ResponseEntity confirmEmailChange(@PathVariable String token){
+        try {
+            userService.confirmEmailChange(token);
+        } catch (IllegalArgumentException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        }catch (EntityNotFoundException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body("Changed");
     }
 
 }

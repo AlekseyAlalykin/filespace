@@ -3,13 +3,13 @@ package org.filespace.model.entities;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.filespace.model.compoundrelations.UserFilespaceRelation;
 
 import javax.persistence.*;
 import javax.validation.constraints.*;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -18,7 +18,7 @@ import java.util.Set;
 public class User extends Model {
 
     @NotNull
-    @Pattern(regexp = "^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$",
+    @Pattern(regexp = "^[A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)*$",
              message = "Illegal set of characters or spacing characters repetition")
     @Size(min = 4, max = 50,
             message = "Should be within range of 4 to 50 characters")
@@ -29,7 +29,7 @@ public class User extends Model {
     private String username;
 
     @NotNull
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Size(min = 60, max = 60)
     @Column(name = "password",
             nullable = false,
@@ -49,6 +49,10 @@ public class User extends Model {
     @Column(name = "registration_date")
     private LocalDate registrationDate;
 
+    @NotNull
+    @Column(name = "enabled")
+    private Boolean enabled;
+
     @JsonIgnore
     @OneToMany(mappedBy = "sender",
             fetch = FetchType.LAZY)
@@ -58,7 +62,15 @@ public class User extends Model {
     @OneToMany(mappedBy = "user",
             targetEntity = UserFilespaceRelation.class,
             fetch = FetchType.LAZY)
-    private Set<UserFilespaceRelation> userFilespaceRelations = new HashSet<>();
+    private Set<UserFilespaceRelation> userFilespaceRelations;
+
+    /*
+    @JsonIgnore
+    @OneToMany(mappedBy = "user",
+            fetch = FetchType.LAZY)
+    private List<VerificationToken> tokens;
+
+     */
 
     public User(){
 
@@ -69,6 +81,8 @@ public class User extends Model {
         this.password = password;
         this.email = email;
         this.registrationDate = registrationDate;
+
+        this.enabled = false;
     }
 
     public String getUsername() {
@@ -117,5 +131,13 @@ public class User extends Model {
 
     public void setUserFilespaceRelations(Set<UserFilespaceRelation> userFilespaceRelations) {
         this.userFilespaceRelations = userFilespaceRelations;
+    }
+
+    public Boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
     }
 }

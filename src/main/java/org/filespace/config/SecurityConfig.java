@@ -3,10 +3,8 @@ package org.filespace.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -17,22 +15,24 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-import org.springframework.util.ResourceUtils;
-
-import java.io.FileInputStream;
-import java.util.Properties;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 @Component
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+    /*
     private static String propertiesPath = "classpath:session.properties";
 
     private static int maximumSessions;
+
+
     static {
 
         try {
@@ -50,6 +50,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             maximumSessions = 1;
         }
     }
+    */
 
     @Autowired
     @Qualifier("userDetailsServiceImpl")
@@ -66,6 +67,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
      */
 
+    /*
     @Configuration
     @Order(1)
     public class BasicHttpSecurityConfig extends WebSecurityConfigurerAdapter{
@@ -77,7 +79,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             http.sessionManagement().maximumSessions(5).
                     maxSessionsPreventsLogin(false).sessionRegistry(sessions);
 
-            http
+            final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+            final CorsConfiguration config = new CorsConfiguration();
+
+            config.addAllowedOriginPattern("*");
+            config.addAllowedHeader("*");
+            config.addAllowedMethod("GET");
+            config.addAllowedMethod("PUT");
+            config.addAllowedMethod("POST");
+            config.addAllowedMethod("PATCH");
+            config.setAllowCredentials(true);
+            source.registerCorsConfiguration("/api/**", config);
+
+            http.addFilterBefore(new CorsFilter(source), LogoutFilter.class)
                     .csrf()
                         .disable()
                     .antMatcher("/api/**")
@@ -86,15 +100,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                             .permitAll()
                     .and()
                     .authorizeRequests()
+                        .antMatchers(HttpMethod.GET,
+                                "/api/users/registration/**",
+                                "/api/users/deletion/**",
+                                "/api/users/email-change/**")
+                            .permitAll()
+                    .and()
+                    .authorizeRequests()
                         .antMatchers("/api/**").authenticated()
                     .and()
-                    /*
-                        .sessionManagement()
-                            .maximumSessions(5)
-                                .sessionRegistry(sessions).and()
-                    .and()
 
-                     */
+                        //.sessionManagement().maximumSessions(5).sessionRegistry(sessions).and().and()
+
+
                         .httpBasic();
 
         }
@@ -127,7 +145,56 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .and().authorizeRequests()
                         .anyRequest()
                             .authenticated();
+
+            http.requiresChannel().antMatchers("/api/**").requiresSecure();
         }
+
+    }
+    */
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        SessionRegistry sessions = context.getBean(SessionRegistry.class);
+
+        http.sessionManagement().maximumSessions(5).
+                maxSessionsPreventsLogin(false).sessionRegistry(sessions);
+
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        final CorsConfiguration config = new CorsConfiguration();
+
+        config.addAllowedOriginPattern("*");
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("GET");
+        config.addAllowedMethod("PUT");
+        config.addAllowedMethod("POST");
+        config.addAllowedMethod("PATCH");
+        config.setAllowCredentials(true);
+        source.registerCorsConfiguration("/api/**", config);
+
+        http.addFilterBefore(new CorsFilter(source), LogoutFilter.class)
+                .csrf()
+                .disable()
+                .antMatcher("/api/**")
+                .authorizeRequests()
+                .antMatchers(HttpMethod.POST,"/api/users")
+                .permitAll()
+                .and()
+                .authorizeRequests()
+                .antMatchers(HttpMethod.GET,
+                        "/api/users/registration/**",
+                        "/api/users/deletion/**",
+                        "/api/users/email-change/**")
+                .permitAll()
+                .and()
+                .authorizeRequests()
+                .antMatchers("/api/**").authenticated()
+                .and()
+
+                //.sessionManagement().maximumSessions(5).sessionRegistry(sessions).and().and()
+
+
+                .httpBasic()
+                .authenticationEntryPoint(new NoPopupBasicAuthenticationEntryPoint());
 
     }
 
@@ -159,4 +226,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     public RegisterSessionAuthenticationStrategy registerSessionAuthStr() {
         return new RegisterSessionAuthenticationStrategy(sessionRegistry());
     }
+
+
 }

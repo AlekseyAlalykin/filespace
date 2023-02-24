@@ -1,4 +1,4 @@
-package org.filespace.model;
+package org.filespace.model.entities;
 
 public enum Role {
     CREATOR(3),

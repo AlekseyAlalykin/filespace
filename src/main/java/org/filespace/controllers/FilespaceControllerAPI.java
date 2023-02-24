@@ -1,7 +1,7 @@
 package org.filespace.controllers;
 
 import org.filespace.model.compoundrelations.FileFilespaceRelation;
-import org.filespace.model.Role;
+import org.filespace.model.entities.Role;
 import org.filespace.model.compoundrelations.UserFilespaceRelation;
 import org.filespace.model.intermediate.FilespaceFileInfo;
 import org.filespace.model.intermediate.FilespaceRole;
@@ -13,10 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import javax.persistence.EntityNotFoundException;
 import java.util.List;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/api/filespaces")
 public class FilespaceControllerAPI {
