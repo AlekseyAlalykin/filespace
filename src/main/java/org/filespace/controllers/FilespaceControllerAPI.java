@@ -1,5 +1,6 @@
 package org.filespace.controllers;
 
+import org.filespace.config.Response;
 import org.filespace.model.compoundrelations.FileFilespaceRelation;
 import org.filespace.model.entities.Role;
 import org.filespace.model.compoundrelations.UserFilespaceRelation;
@@ -36,7 +37,7 @@ public class FilespaceControllerAPI {
             filespaces = filespaceService.getUserFilespaces(securityUtil.getCurrentUser());
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Something went wrong, try again later");
+                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,"Something went wrong, try again later"));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -44,7 +45,7 @@ public class FilespaceControllerAPI {
 
     }
 
-    @PostMapping
+    @PostMapping(headers = {"content-type=application/x-www-form-urlencoded"})
     public ResponseEntity postFilespace(@RequestParam(value = "title", required = false) String title){
         Filespace filespace;
 
@@ -56,7 +57,25 @@ public class FilespaceControllerAPI {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST,e.getMessage()));
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(filespace);
+    }
+
+    @PostMapping(headers = {"content-type=application/json"})
+    public ResponseEntity postFilespaceFromJSON(@RequestBody Filespace filespace){
+
+        try {
+            if (filespace.getTitle() == null)
+                throw new NullPointerException("No parameter \"title\" specified");
+
+            filespace = filespaceService.createFilespace(securityUtil.getCurrentUser(), filespace.getTitle());
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Response.build(HttpStatus.BAD_REQUEST,e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -73,15 +92,15 @@ public class FilespaceControllerAPI {
 
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND,e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN,e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST,e.getMessage()));
         }
 
         return ResponseEntity
@@ -89,7 +108,7 @@ public class FilespaceControllerAPI {
                 .body(filespace);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping(path = "/{id}", headers = {"content-type=application/x-www-form-urlencoded"})
     public ResponseEntity updateFilespace(@PathVariable String id,
                                          @RequestParam(value = "title",required = false) String title){
         try {
@@ -100,19 +119,44 @@ public class FilespaceControllerAPI {
             filespaceService.updateFilespaceTitle(securityUtil.getCurrentUser(),lId,title);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body("Filespace info changed");
+                .body(Response.build(HttpStatus.OK,"Filespace info changed"));
+    }
+
+    @PatchMapping(path = "/{id}", headers = {"content-type=application/json"})
+    public ResponseEntity updateFilespaceFromJSON(@PathVariable String id, @RequestBody Filespace filespace){
+        try {
+            if (filespace.getTitle() == null)
+                throw new NullPointerException("No parameter \"title\" specified");
+
+            Long lId = Long.parseLong(id);
+            filespaceService.updateFilespaceTitle(securityUtil.getCurrentUser(),lId, filespace.getTitle());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
+
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(Response.build(HttpStatus.OK, "Filespace info changed"));
     }
 
     @DeleteMapping("/{id}")
@@ -122,24 +166,23 @@ public class FilespaceControllerAPI {
             filespaceService.deleteFilespace(securityUtil.getCurrentUser(), lId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
-            e.printStackTrace();
 
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body("Filespace deleted");
+                .body(Response.build(HttpStatus.OK, "Filespace deleted"));
     }
 
-    @PostMapping("/{filespaceId}/files")
+    @PostMapping(path = "/{filespaceId}/files", headers = {"content-type=application/x-www-form-urlencoded"})
     public ResponseEntity attachFileToFilespace(@PathVariable String filespaceId,
                                                 @RequestParam(value = "fileId", required = false) String fileId){
         FileFilespaceRelation relation;
@@ -154,15 +197,44 @@ public class FilespaceControllerAPI {
             relation = filespaceService.attachFileToFilespace(securityUtil.getCurrentUser(),lFilespaceId,lFileId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(relation);
+
+    }
+
+    @PostMapping(path = "/{filespaceId}/files", headers = {"content-type=application/json"})
+    public ResponseEntity attachFileToFilespaceFromJSON(@PathVariable String filespaceId, @RequestBody FileFilespaceRelation relation){
+
+        try {
+            if (relation.getKey().getFileId() == null)
+                throw new NullPointerException("No parameter \"fileId\" specified");
+
+            Long lFilespaceId = Long.parseLong(filespaceId);
+
+            relation = filespaceService.attachFileToFilespace(securityUtil.getCurrentUser(),
+                    lFilespaceId,relation.getKey().getFileId());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
+
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -180,15 +252,15 @@ public class FilespaceControllerAPI {
             list = filespaceService.getFilesFromFilespace(securityUtil.getCurrentUser(), lId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -205,22 +277,22 @@ public class FilespaceControllerAPI {
             list = filespaceService.getUsersOfFilespace(securityUtil.getCurrentUser(), lId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(list);
     }
 
-    @PostMapping("/{id}/users")
+    @PostMapping(path = "/{id}/users", headers = {"content-type=application/x-www-form-urlencoded"})
     public ResponseEntity addUsersToFilespace(@PathVariable String id,
                                               @RequestParam(value = "userId", required = false) String userId,
                                               @RequestParam(value = "role", required = false) String role){
@@ -240,19 +312,51 @@ public class FilespaceControllerAPI {
             relation = filespaceService.attachUserToFilespace(securityUtil.getCurrentUser(), lFilespaceId, lUserId, userRole);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(relation);
+    }
+
+    @PostMapping(path = "/{id}/users", headers = {"content-type=application/json"})
+    public ResponseEntity addUsersToFilespaceFromJSON(@PathVariable String id, @RequestBody UserFilespaceRelation relation){
+        UserFilespaceRelation newRelation;
+        System.out.println(relation.getKey().getUserId());
+
+        try {
+            if (relation.getKey().getUserId() == null)
+                throw new NullPointerException("No parameter \"userId\" specified");
+
+            if (relation.getRole() == null)
+                throw new NullPointerException("No parameter \"role\" specified");
+
+            Long lFilespaceId = Long.parseLong(id);
+
+            newRelation = filespaceService.attachUserToFilespace(securityUtil.getCurrentUser(), lFilespaceId, relation.getKey().getUserId(), relation.getRole());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
+
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(newRelation);
     }
 
     @DeleteMapping("/{filespaceId}/users/{userId}")
@@ -269,19 +373,19 @@ public class FilespaceControllerAPI {
             filespaceService.detachUserFromFilespace(securityUtil.getCurrentUser(), lFilespaceId,lUserId, bDeleteFiles);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body("Removed");
+                .body(Response.build(HttpStatus.OK, "Removed"));
     }
 
     @DeleteMapping("/{filespaceId}/files/{fileId}")
@@ -295,22 +399,22 @@ public class FilespaceControllerAPI {
             filespaceService.detachFileFromFilespace(securityUtil.getCurrentUser(),lFilespaceId,lFileId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body("Removed");
+                .body(Response.build(HttpStatus.OK, "Removed"));
     }
 
-    @PatchMapping("/{filespaceId}/users/{userId}")
+    @PatchMapping(path = "/{filespaceId}/users/{userId}", headers = {"content-type=application/x-www-form-urlencoded"} )
     public ResponseEntity updateUserRole(@PathVariable(value = "filespaceId") String filespaceId,
                                          @PathVariable(value = "userId") String userId,
                                          @RequestParam(value = "role") String role){
@@ -322,18 +426,47 @@ public class FilespaceControllerAPI {
             filespaceService.updateUserRole(securityUtil.getCurrentUser(),lFilespaceId,lUserId, newRole);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body("Role changed");
+                .body(Response.build(HttpStatus.OK, "Role changed"));
+    }
+
+    @PatchMapping(path = "/{filespaceId}/users/{userId}", headers = {"content-type=application/json"} )
+    public ResponseEntity updateUserRoleFromJSON(@PathVariable(value = "filespaceId") String filespaceId,
+                                         @PathVariable(value = "userId") String userId,
+                                         @RequestBody UserFilespaceRelation relation){
+        try {
+            if (relation.getRole() == null)
+                throw new Exception("No role specified");
+
+            Long lFilespaceId = Long.parseLong(filespaceId);
+            Long lUserId = Long.parseLong(userId);
+
+            filespaceService.updateUserRole(securityUtil.getCurrentUser(),lFilespaceId,lUserId, relation.getRole());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
+
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(Response.build(HttpStatus.OK, "Role changed"));
     }
 }

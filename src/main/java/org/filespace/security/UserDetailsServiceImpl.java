@@ -4,8 +4,6 @@ import org.filespace.model.entities.User;
 import org.filespace.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -28,8 +26,13 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
 
     public static UserDetails fromUser(User user) {
+        return new UserDetailsImpl(user.getUsername(), user.getPassword(),
+                user.isEnabled(), new LinkedList<GrantedAuthority>());
+        /*
         return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(),
                 user.isEnabled(), true, true, true, new LinkedList<GrantedAuthority>());
+
+         */
         //return new org.springframework.security.core.userdetails.User(user.getUsername(),user.getPassword(), new LinkedList<GrantedAuthority>());
     }
 }

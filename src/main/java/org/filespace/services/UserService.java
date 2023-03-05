@@ -6,9 +6,15 @@ import org.filespace.model.entities.*;
 import org.filespace.repositories.*;
 import org.filespace.security.SecurityUtil;
 import org.filespace.security.SessionManager;
+import org.filespace.security.UserDetailsImpl;
 import org.filespace.services.threads.EmailThread;
 import org.filespace.services.threads.FileDeletingThread;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +22,7 @@ import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -48,7 +51,8 @@ public class UserService {
     @Autowired
     private SessionManager sessionManager;
 
-    @Autowired SecurityUtil securityUtil;
+    @Autowired
+    private SecurityUtil securityUtil;
 
     @Transactional
     public User registerUser(String username, String password, String email){
@@ -56,7 +60,7 @@ public class UserService {
             throw new IllegalArgumentException("Weak password");
 
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
-        User user = new User(username, encoder.encode(password),email, LocalDate.now());
+        User user = new User(username, encoder.encode(password), email, LocalDate.now());
 
         if (!validationService.validate(user))
             throw new IllegalArgumentException(validationService.getConstrainsViolations(user));
@@ -189,7 +193,7 @@ public class UserService {
 
         User newUserState = new User();
 
-        if (username == null)
+        if (username == null || oldUserState.getUsername().equals(username))
             newUserState.setUsername(oldUserState.getUsername());
         else {
             if (userRepository.existsByUsername(username)) {
@@ -213,7 +217,7 @@ public class UserService {
 
         VerificationToken verificationToken = null;
 
-        if (email == null)
+        if (email == null || oldUserState.getEmail().equals(email))
             newUserState.setEmail(oldUserState.getEmail());
         else {
             if (userRepository.existsByEmail(email)) {
@@ -241,10 +245,32 @@ public class UserService {
         verificationTokenRepository.flush();
         userRepository.flush();
 
-        if (email != null)
+        if ( !oldUserState.getEmail().equals(email) )
             new EmailThread(email, EmailHandler.onEmailChangeSubject,
                     String.format(EmailHandler.onEmailChangeMessage, EmailHandler.domainName, verificationToken.getToken())
             ).start();
+
+        //Изменение данных пользователя в spring security
+        sessionManager.updateUsernameForUserSessions(oldUserState.getUsername(), newUserState.getUsername());
+        /*
+        Collection<SimpleGrantedAuthority> authorities =
+                (Collection<SimpleGrantedAuthority>)SecurityContextHolder.getContext()
+                        .getAuthentication().getAuthorities();
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(newUserState.getUsername(), newUserState.getPassword(), authorities);
+
+         */
+
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        userDetails.setUsername(newUserState.getUsername());
+
+
+        /*
+        Authentication request = new UsernamePasswordAuthenticationToken(newUserState.getUsername(), newUserState.getPassword());
+        Authentication result = authenticationManager.authenticate(request);
+        SecurityContextHolder.getContext().setAuthentication(result);
+        */
 
         if (password != null)
             sessionManager.closeAllUserSessions(oldUserState);

@@ -30,7 +30,7 @@ public class ValidationService {
             builder.append(" Value: ");
             builder.append(violation.getInvalidValue());
             builder.append(" Message: ");
-            builder.append(violation.getMessage());
+            builder.append(violation.getMessage() + " / ");
         }
 
         return builder.toString();

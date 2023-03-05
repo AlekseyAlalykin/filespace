@@ -1,13 +1,14 @@
 package org.filespace.controllers;
 
+import org.filespace.config.Response;
 import org.filespace.model.entities.User;
 import org.filespace.security.SecurityUtil;
+import org.filespace.security.SessionManager;
 import org.filespace.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
@@ -18,15 +19,15 @@ import javax.persistence.EntityNotFoundException;
 public class UserControllerAPI {
 
     @Autowired
-    private ApplicationEventPublisher eventPublisher;
-
-    @Autowired
     private SecurityUtil securityUtil;
 
     @Autowired
     private UserService userService;
 
-    @PostMapping
+    @Autowired
+    private SessionManager sessionManager;
+
+    @PostMapping(headers = {"content-type=application/x-www-form-urlencoded"})
     public ResponseEntity createUser(@RequestParam("username") String username,
                                      @RequestParam("password") String password,
                                      @RequestParam("email") String email){
@@ -38,12 +39,42 @@ public class UserControllerAPI {
 
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(user);
+    }
+
+    @PostMapping(headers = {"content-type=application/json"})
+    public ResponseEntity createUserFromJSON(@RequestBody User user){
+
+        try {
+            if (user.getUsername() == null)
+                throw new Exception("No username specified");
+            if (user.getEmail() == null)
+                throw new Exception("No email specified");
+            if (user.getPassword() == null)
+                throw new Exception("No password specified");
+
+            user = userService.registerUser(user.getUsername(), user.getPassword(), user.getEmail());
+
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        }
+
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(user);
+    }
+
+    @GetMapping("/logout")
+    public ResponseEntity logout(){
+        sessionManager.closeAllUserSessions(securityUtil.getCurrentUser());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(Response.build(HttpStatus.OK, HttpStatus.OK.getReasonPhrase()));
     }
 
     @GetMapping
@@ -53,7 +84,7 @@ public class UserControllerAPI {
             user = userService.getCurrentUser();
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -70,14 +101,14 @@ public class UserControllerAPI {
             user = userService.getUserById(lId);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("No user with such id found");
+                    .body(Response.build(HttpStatus.NOT_FOUND, "No user with such id found"));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(user);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping(path = "/{id}", headers = {"content-type=application/x-www-form-urlencoded"})
     public ResponseEntity updateUser(@PathVariable String id,
                                      @RequestParam(value = "username",required = false) String username,
                                      @RequestParam(value = "password",required = false) String password,
@@ -89,18 +120,42 @@ public class UserControllerAPI {
             userService.updateUser(securityUtil.getCurrentUser(), lId, username, password, email);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body("OK");
+        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
+    }
+
+    @PatchMapping(path = "/{id}", headers = {"content-type=application/json"})
+    public ResponseEntity updateUserFromJSON(@PathVariable String id, @RequestBody User user){
+
+        try {
+            Long lId = Long.parseLong(id);
+
+            userService.updateUser(securityUtil.getCurrentUser(), lId, user.getUsername(), user.getPassword(), user.getEmail());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
+
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
     }
 
     @DeleteMapping("/{id}")
@@ -112,18 +167,18 @@ public class UserControllerAPI {
             userService.deleteUser(securityUtil.getCurrentUser(), lId);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body("OK");
+        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
     }
 
     @GetMapping("/registration/{token}")
@@ -132,16 +187,16 @@ public class UserControllerAPI {
             userService.confirmRegistration(token);
         } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST,e.getMessage()));
         }catch (EntityNotFoundException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST,e.getMessage()));
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,e.getMessage()));
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body("Confirmed");
+        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"Confirmed"));
     }
 
     @GetMapping("/deletion/{token}")
@@ -150,16 +205,16 @@ public class UserControllerAPI {
             userService.confirmDeletion(token);
         } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }catch (EntityNotFoundException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body("Deleted");
+        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK, "Deleted"));
     }
 
     @GetMapping("/email-change/{token}")
@@ -168,16 +223,16 @@ public class UserControllerAPI {
             userService.confirmEmailChange(token);
         } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }catch (EntityNotFoundException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(e.getMessage());
+                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body("Changed");
+        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK, "Changed"));
     }
 
 }

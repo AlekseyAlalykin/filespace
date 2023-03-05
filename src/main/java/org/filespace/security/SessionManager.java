@@ -4,6 +4,7 @@ import org.filespace.model.entities.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.stereotype.Service;
 
 
@@ -21,7 +22,15 @@ public class SessionManager {
         }
     }
 
+    public void updateUsernameForUserSessions(String oldUsername, String newUsername){
 
 
+        for (Object principal: sessionRegistry.getAllPrincipals()){
+            System.out.println(principal);
+            UserDetailsImpl userDetails = (UserDetailsImpl)principal;
+            if (userDetails.getUsername().equals(oldUsername))
+                userDetails.setUsername(newUsername);
+        }
+    }
 
 }

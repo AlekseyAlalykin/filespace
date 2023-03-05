@@ -17,16 +17,17 @@ import java.time.LocalTime;
 @Table(name = "files_filespaces")
 public class FileFilespaceRelation implements EntityImplementation {
 
-    @JsonIgnore
     @NotNull
     @EmbeddedId
-    private FileFilespaceKey fileFilespaceKey = new FileFilespaceKey();
+    private FileFilespaceKey key = new FileFilespaceKey();
 
+    @JsonIgnore
     @MapsId("fileId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "file_id")
     private File file;
 
+    @JsonIgnore
     @MapsId("filespaceId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "filespace_id")
@@ -42,8 +43,8 @@ public class FileFilespaceRelation implements EntityImplementation {
             nullable = false)
     private LocalTime attachTime;
 
-    public FileFilespaceRelation(@NotNull FileFilespaceKey fileFilespaceKey, @NotNull LocalDate attachDate, @NotNull LocalTime attachTime) {
-        this.fileFilespaceKey = fileFilespaceKey;
+    public FileFilespaceRelation(@NotNull FileFilespaceKey key, @NotNull LocalDate attachDate, @NotNull LocalTime attachTime) {
+        this.key = key;
         this.attachDate = attachDate;
         this.attachTime = attachTime;
     }
@@ -51,12 +52,12 @@ public class FileFilespaceRelation implements EntityImplementation {
     public FileFilespaceRelation() {
     }
 
-    public FileFilespaceKey getFileFilespaceKey() {
-        return fileFilespaceKey;
+    public FileFilespaceKey getKey() {
+        return key;
     }
 
-    public void setFileFilespaceKey(FileFilespaceKey fileFilespaceKey) {
-        this.fileFilespaceKey = fileFilespaceKey;
+    public void setKey(FileFilespaceKey fileFilespaceKey) {
+        this.key = fileFilespaceKey;
     }
 
     public File getFile() {

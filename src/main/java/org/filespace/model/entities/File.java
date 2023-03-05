@@ -1,5 +1,6 @@
 package org.filespace.model.entities;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.filespace.model.compoundrelations.FileFilespaceRelation;
 
@@ -23,6 +24,7 @@ public class File extends Model {
     @JoinColumn(name = "sender_id")
     private User sender;
 
+    @JsonAlias({"filename"})
     @NotNull
     @Size(min = 1)
     @Column(name = "file_name",

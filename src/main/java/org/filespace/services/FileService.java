@@ -199,6 +199,32 @@ public class FileService {
         return list;
     }
 
+    public File getFileJSON(User user, Long fileId) throws Exception{
+        Optional<File> optional = fileRepository.findById(fileId);
+
+        if (optional.isEmpty())
+            throw new EntityNotFoundException("No such file found");
+
+        File file = optional.get();
+
+        boolean hasRight = false;
+
+        if (user.getFiles().contains(file))
+            hasRight = true;
+
+        for (UserFilespaceRelation relation: user.getUserFilespaceRelations()) {
+            if (relation.getFilespace().getFiles().contains(file)) {
+                hasRight = true;
+                break;
+            }
+        }
+
+        if (!hasRight)
+            throw new IllegalAccessException("No access to the file");
+
+        return file;
+    }
+
     public void updateFileInfo(User user, Long fileId, String comment, String filename) throws Exception {
         Optional<File> optional = fileRepository.findById(fileId);
 

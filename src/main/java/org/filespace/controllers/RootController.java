@@ -1,8 +1,13 @@
 package org.filespace.controllers;
 
+import org.filespace.config.Response;
 import org.filespace.model.entities.User;
+import org.filespace.security.UserDetailsImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,22 +15,19 @@ import org.springframework.web.bind.annotation.*;
 @Controller
 @RequestMapping("/")
 public class RootController {
-    @PostMapping("/api/test")
-    public ResponseEntity testMethod(@RequestBody User user){
-        System.out.println(user.getUsername());
-        System.out.println(user.getEmail());
-        System.out.println(user.getPassword());
-        return ResponseEntity.status(HttpStatus.OK).body("Received");
+
+    @Autowired
+    private SessionRegistry sessionRegistry;
+
+    @GetMapping("/api/test")
+    public ResponseEntity testMethod(){
+        for (Object object:sessionRegistry.getAllPrincipals()) {
+            UserDetailsImpl user = (UserDetailsImpl) (object);
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(SecurityContextHolder.getContext().getAuthentication().getPrincipal());
     }
 
-    @RequestMapping("/login")
-    public String getLoginPage(){
-        return "login";
-    }
 
-    @GetMapping("/registration")
-    public String getRegistrationPage(){
-        return "registration";
-    }
 
 }

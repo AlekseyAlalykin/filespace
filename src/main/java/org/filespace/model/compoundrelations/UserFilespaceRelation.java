@@ -13,17 +13,18 @@ import javax.validation.constraints.NotNull;
 @Table(name = "users_filespaces")
 public class UserFilespaceRelation implements EntityImplementation {
 
-    @JsonIgnore
     @NotNull
     @EmbeddedId
     private UserFilespaceKey key = new UserFilespaceKey();
 
+    @JsonIgnore
     @NotNull
     @MapsId("userId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
+    @JsonIgnore
     @NotNull
     @MapsId("filespaceId")
     @ManyToOne(fetch = FetchType.LAZY)

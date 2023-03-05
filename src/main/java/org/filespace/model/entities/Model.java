@@ -1,5 +1,6 @@
 package org.filespace.model.entities;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import org.filespace.model.EntityImplementation;
 
 import javax.persistence.*;
@@ -8,6 +9,7 @@ import javax.persistence.*;
 public class Model implements EntityImplementation {
 
     @Id
+    @JsonAlias({"fileId", "userId", "filespaceId"})
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
