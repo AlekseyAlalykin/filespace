@@ -64,12 +64,19 @@ public class UserDetailsImpl implements UserDetails {
         if (o == null || getClass() != o.getClass()) return false;
         UserDetailsImpl that = (UserDetailsImpl) o;
         return username.equals(that.username) &&
-                password.equals(that.password) &&
-                isEnabled.equals(that.isEnabled);
+                password.equals(that.password);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(username, password, isEnabled);
+    }
+
+    @Override
+    public String toString() {
+        return "UserDetailsImpl{" +
+                "username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                '}';
     }
 }

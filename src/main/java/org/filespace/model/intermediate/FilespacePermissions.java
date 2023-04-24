@@ -3,9 +3,9 @@ package org.filespace.model.intermediate;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-public interface FilespaceUserInfo {
+public interface FilespacePermissions {
     public Long getId();
-    public String getUsername();
+    public String getTitle();
 
     public LocalDate getJoinDate();
     public LocalTime getJoinTime();

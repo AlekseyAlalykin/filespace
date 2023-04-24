@@ -1,12 +1,12 @@
 package org.filespace.services;
 
-import org.filespace.model.entities.Role;
+
 import org.filespace.model.compoundrelations.*;
 import org.filespace.model.entities.File;
 import org.filespace.model.entities.Filespace;
 import org.filespace.model.entities.User;
 import org.filespace.model.intermediate.FilespaceFileInfo;
-import org.filespace.model.intermediate.FilespaceRole;
+import org.filespace.model.intermediate.FilespacePermissions;
 import org.filespace.model.intermediate.FilespaceUserInfo;
 import org.filespace.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +40,14 @@ public class FilespaceService {
     @Autowired
     private ValidationService validationService;
 
-    public List<FilespaceRole> getUserFilespaces(User user){
-        List<FilespaceRole> list = userFilespaceRelationRepository.findFilespacesAndRolesByUserId(user.getId());
+    public List<FilespacePermissions> getUserFilespaces(User user){
+        List<FilespacePermissions> list = userFilespaceRelationRepository.findFilespacesAndPermissionsByUserId(user.getId());
+
+        return list;
+    }
+
+    public List<FilespacePermissions> getUserFilespacesByTitle(User user, String title){
+        List<FilespacePermissions> list = userFilespaceRelationRepository.findFilespacesAndPermissionsByUserIdAndTitle(user.getId(), title);
 
         return list;
     }
@@ -57,9 +63,18 @@ public class FilespaceService {
         filespaceRepository.save(filespace);
 
         UserFilespaceRelation relation = new UserFilespaceRelation();
+
         relation.setUser(user);
         relation.setFilespace(filespace);
-        relation.setRole(Role.CREATOR);
+
+        relation.setJoinDate(LocalDate.now());
+        relation.setJoinTime(LocalTime.now());
+
+        relation.setAllowDeletion(true);
+        relation.setAllowDownload(true);
+        relation.setAllowUserManagement(true);
+        relation.setAllowFilespaceManagement(true);
+        relation.setAllowUpload(true);
 
         userFilespaceRelationRepository.saveAndFlush(relation);
         filespaceRepository.flush();
@@ -67,21 +82,21 @@ public class FilespaceService {
         return filespace;
     }
 
-    public Filespace getFilespaceById(User user, Long requestedFilespaceId) throws Exception{
-        Optional<Filespace> optional = filespaceRepository.findById(requestedFilespaceId);
+    public FilespacePermissions getFilespaceById(User user, Long filespaceId) throws Exception{
+        Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
-        if (optional.isEmpty())
+        if (optionalFilespace.isEmpty())
             throw new EntityNotFoundException("No such entity found");
 
+        Optional<FilespacePermissions> optionalPermissions = userFilespaceRelationRepository.findFilespaceAndPermissionsByUserIdAndFilespaceId(user.getId(),filespaceId);
 
-
-        if (!userFilespaceRelationRepository.existsById(new UserFilespaceKey(user.getId(), requestedFilespaceId)))
+        if (optionalPermissions.isEmpty())
             throw new IllegalAccessException("No access to this filespace");
 
-        return optional.get();
+        return optionalPermissions.get();
     }
 
-    public void updateFilespaceTitle(User user, Long id, String title) throws Exception{
+    public void updateFilespace(User user, Long id, String title) throws Exception{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(id);
 
         if (optionalFilespace.isEmpty())
@@ -97,7 +112,7 @@ public class FilespaceService {
 
         UserFilespaceRelation relation = optionalRelation.get();
 
-        if (relation.getRole() != Role.CREATOR)
+        if (!relation.allowFilespaceManagement())
             throw new IllegalAccessException("No authority over filespace");
 
         if (title == null)
@@ -128,7 +143,7 @@ public class FilespaceService {
 
         UserFilespaceRelation relation = optionalRelation.get();
 
-        if (relation.getRole() != Role.CREATOR)
+        if (!relation.allowFilespaceManagement())
             throw new IllegalAccessException("No authority over filespace");
 
         fileFilespaceRelationRepository.deleteByFilespace(filespace);
@@ -167,10 +182,8 @@ public class FilespaceService {
         if (optionalRelation.isEmpty())
             throw new IllegalAccessException("No access to filespace");
 
-        Role userRole = optionalRelation.get().getRole();
-
-        if (userRole == Role.SPECTATOR)
-            throw new IllegalAccessException("Current role SPECTATOR");
+        if (!optionalRelation.get().allowUpload())
+            throw new IllegalAccessException("No upload permission");
 
         if (fileFilespaceRelationRepository.existsByFileAndFilespace(file,filespace))
             throw new IllegalStateException("File already in filespace");
@@ -187,7 +200,7 @@ public class FilespaceService {
         return relation;
     }
 
-    public List<FilespaceFileInfo> getFilesFromFilespace(User user, Long id) throws Exception{
+    public List<FilespaceFileInfo> getFilesFromFilespace(User user, Long id, String query) throws Exception{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(id);
 
         if (optionalFilespace.isEmpty())
@@ -197,10 +210,10 @@ public class FilespaceService {
                 new UserFilespaceKey(user.getId(),id)))
             throw new IllegalAccessException("No access to filespace");
 
-        return fileFilespaceRelationRepository.getFilesFromFilespace(id);
+        return fileFilespaceRelationRepository.getFilesFromFilespace(id, query);
     }
 
-    public List<FilespaceUserInfo> getUsersOfFilespace(User user, Long id) throws Exception {
+    public List<FilespaceUserInfo> getUsersOfFilespace(User user, Long id, String username) throws Exception {
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(id);
 
         if (optionalFilespace.isEmpty())
@@ -210,10 +223,11 @@ public class FilespaceService {
                 new UserFilespaceKey(user.getId(),id)))
             throw new IllegalAccessException("No access to filespace");
 
-        return userFilespaceRelationRepository.getFilespaceUsersById(id);
+        return userFilespaceRelationRepository.getFilespaceUsersByIdAndUsername(id, username);
     }
 
-    public UserFilespaceRelation attachUserToFilespace(User requester, Long filespaceId, Long userId, Role role) throws Exception{
+
+    public UserFilespaceRelation attachUserToFilespace(User requester, Long filespaceId, UserFilespaceRelation relation) throws Exception{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
@@ -221,7 +235,11 @@ public class FilespaceService {
 
         Filespace filespace = optionalFilespace.get();
 
-        Optional<User> optionalUser = userRepository.findById(userId);
+        Optional<User> optionalUser;
+        if (relation.getUser().getId() != null)
+            optionalUser = userRepository.findById(relation.getUser().getId());
+        else
+            optionalUser = userRepository.findByUsername(relation.getUser().getUsername());
 
         if (optionalUser.isEmpty())
             throw new EntityNotFoundException("No such user");
@@ -234,24 +252,35 @@ public class FilespaceService {
         if (optionalRequesterRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
 
-        Role requesterRole = optionalRequesterRelation.get().getRole();
+        UserFilespaceRelation requesterRelation = optionalRequesterRelation.get();
 
-        if (requesterRole.getWeight() < Role.ADMINISTRATOR.getWeight())
+        if (!requesterRelation.allowUserManagement())
             throw new IllegalAccessException("No authority over filespace");
+
+        if (!requesterRelation.allowDownload() && relation.allowDownload())
+            throw new IllegalArgumentException("Can't give download permission since you don't have one");
+
+        if (!requesterRelation.allowUpload() && relation.allowUpload())
+            throw new IllegalArgumentException("Can't give upload permission since you don't have one");
+
+        if (!requesterRelation.allowUserManagement() && relation.allowUserManagement())
+            throw new IllegalArgumentException("Can't give user management permission since you don't have one");
+
+        if (!requesterRelation.allowFilespaceManagement() && relation.allowFilespaceManagement())
+            throw new IllegalArgumentException("Can't give filespace management permission since you don't have one");
 
         Optional<UserFilespaceRelation> optionalTargetRelation = userFilespaceRelationRepository.findById(
                 new UserFilespaceKey(targetedUser.getId(),filespaceId));
         if (optionalTargetRelation.isPresent())
             throw new IllegalArgumentException("User already attached to filespace");
 
-        if ((requesterRole == Role.ADMINISTRATOR) && requesterRole.getWeight() <= role.getWeight())
-            throw new IllegalArgumentException("Can't add user higher than CONTRIBUTOR");
-
-        UserFilespaceRelation relation = new UserFilespaceRelation();
+        if (!requesterRelation.allowFilespaceManagement() && relation.allowFilespaceManagement().equals(true))
+            throw new IllegalArgumentException("Can't give filespace management permission without having one");
 
         relation.setUser(targetedUser);
         relation.setFilespace(filespace);
-        relation.setRole(role);
+        relation.setJoinDate(LocalDate.now());
+        relation.setJoinTime(LocalTime.now());
 
         userFilespaceRelationRepository.saveAndFlush(relation);
 
@@ -280,23 +309,14 @@ public class FilespaceService {
         if (optionalRequesterFilespaceRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
 
-        Role requesterRole = optionalRequesterFilespaceRelation.get().getRole();
-
-        if (requesterRole.getWeight() < Role.ADMINISTRATOR.getWeight() && !requester.equals(targetedUser))
-            throw new IllegalAccessException("No authority to remove user");
+        if (!optionalRequesterFilespaceRelation.get().allowUserManagement() && !requester.equals(targetedUser))
+            throw new IllegalAccessException("No permission to remove user");
 
         Optional<UserFilespaceRelation> optionalTargetedUserRelation =
                 userFilespaceRelationRepository.findById(new UserFilespaceKey(userId, filespaceId));
 
         if (optionalTargetedUserRelation.isEmpty())
             throw new IllegalArgumentException("User isn't in filespace");
-
-        UserFilespaceRelation targetedUserRelation = optionalTargetedUserRelation.get();
-
-        if (requesterRole.equals(Role.ADMINISTRATOR) &&
-                targetedUserRelation.getRole().getWeight() >= requesterRole.getWeight() &&
-                !requester.equals(targetedUser))
-            throw new IllegalArgumentException("Can only remove users with roles CONTRIBUTOR or SPECTATOR");
 
         if (deleteFiles)
             fileFilespaceRelationRepository.deleteFilesFromFilespaceByUserId(userId);
@@ -345,19 +365,19 @@ public class FilespaceService {
 
         FileFilespaceRelation fileFilespaceRelation = optionalFileFilespaceRelation.get();
 
-        if ((requesterRelation.getRole().getWeight() < Role.ADMINISTRATOR.getWeight()) && !file.getSender().equals(requester))
+        if (!requesterRelation.allowDeletion() && !file.getSender().equals(requester))
             throw new IllegalAccessException("No authority to remove the file");
 
         fileFilespaceRelationRepository.delete(fileFilespaceRelation);
     }
 
-    public void updateUserRole(User requester, Long filespaceId, Long userId, Role role) throws Exception {
-        Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
+    public void updateUserPermissions(User requester, UserFilespaceRelation relation) throws Exception {
+        Optional<Filespace> optionalFilespace = filespaceRepository.findById(relation.getFilespace().getId());
 
         if (optionalFilespace.isEmpty())
             throw new EntityNotFoundException("No such filespace");
 
-        Optional<User> optionalUser = userRepository.findById(userId);
+        Optional<User> optionalUser = userRepository.findById(relation.getUser().getId());
 
         if (optionalUser.isEmpty())
             throw new EntityNotFoundException("No such user");
@@ -365,31 +385,54 @@ public class FilespaceService {
         User target = optionalUser.get();
 
         Optional<UserFilespaceRelation> optionalRequesterFilespaceRelation =
-                userFilespaceRelationRepository.findById(new UserFilespaceKey(requester.getId(), filespaceId));
+                userFilespaceRelationRepository.findById(new UserFilespaceKey(requester.getId(), relation.getFilespace().getId()));
 
         if (optionalRequesterFilespaceRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
 
-        Role requesterRole = optionalRequesterFilespaceRelation.get().getRole();
+        UserFilespaceRelation requesterRelation = optionalRequesterFilespaceRelation.get();
 
-        if (requesterRole.equals(Role.CONTRIBUTOR) || requesterRole.equals(Role.SPECTATOR))
-            throw new IllegalAccessException("No authority to change role");
+        if (!requesterRelation.allowUserManagement())
+            throw new IllegalAccessException("No authority to change permissions");
+
+        if (!requesterRelation.allowUserManagement())
+            throw new IllegalAccessException("No authority over filespace");
 
         Optional<UserFilespaceRelation> optionalTargetedUserRelation =
-                userFilespaceRelationRepository.findById(new UserFilespaceKey(userId, filespaceId));
+                userFilespaceRelationRepository.findById(new UserFilespaceKey(relation.getUser().getId(), relation.getFilespace().getId()));
 
         if (optionalTargetedUserRelation.isEmpty())
             throw new IllegalArgumentException("User isn't in filespace");
 
         UserFilespaceRelation targetedUserRelation = optionalTargetedUserRelation.get();
 
+        if (!requesterRelation.allowDownload() && relation.allowDownload() && !targetedUserRelation.allowDownload())
+            throw new IllegalArgumentException("Can't give download permission since you don't have one");
+
+        if (!requesterRelation.allowUpload() && relation.allowUpload() && !targetedUserRelation.allowUpload())
+            throw new IllegalArgumentException("Can't give upload permission since you don't have one");
+
+        if (!requesterRelation.allowUserManagement() && relation.allowUserManagement() && !targetedUserRelation.allowUserManagement())
+            throw new IllegalArgumentException("Can't give user management permission since you don't have one");
+
+        if (!requesterRelation.allowFilespaceManagement() && relation.allowFilespaceManagement() && !targetedUserRelation.allowFilespaceManagement())
+            throw new IllegalArgumentException("Can't give filespace management permission since you don't have one");
+
+        if (!requesterRelation.allowDeletion() && relation.allowDeletion() && !targetedUserRelation.allowDeletion())
+            throw new IllegalArgumentException("Can't give filespace management permission since you don't have one");
+
         if (requester.equals(target))
-            throw new IllegalArgumentException("Can't change self role");
+            throw new IllegalArgumentException("Can't change self permissions");
 
-        if (requesterRole.equals(Role.ADMINISTRATOR) && (Role.ADMINISTRATOR.getWeight() <= role.getWeight()))
-            throw new IllegalArgumentException("No authority to attach given role");
+        if (!optionalRequesterFilespaceRelation.get().allowFilespaceManagement() && relation.allowFilespaceManagement())
+            throw new IllegalArgumentException("Can't give filespace management permission without having one");
 
-        targetedUserRelation.setRole(role);
+        targetedUserRelation.setAllowDownload(relation.allowDownload());
+        targetedUserRelation.setAllowUpload(relation.allowUpload());
+        targetedUserRelation.setAllowDeletion(relation.allowDeletion());
+        targetedUserRelation.setAllowUserManagement(relation.allowUserManagement());
+        targetedUserRelation.setAllowFilespaceManagement(relation.allowFilespaceManagement());
+
         userFilespaceRelationRepository.saveAndFlush(targetedUserRelation);
     }
 }

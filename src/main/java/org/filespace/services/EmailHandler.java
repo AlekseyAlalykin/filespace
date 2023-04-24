@@ -1,19 +1,18 @@
 package org.filespace.services;
 
-import org.springframework.util.ResourceUtils;
+import org.springframework.core.io.ClassPathResource;
 import javax.mail.*;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
 public class EmailHandler {
 
-    static private String smtpPropertiesPath =  "classpath:smtp.properties";
-    static private String domainPropertiesPath = "classpath:domain.properties";
-    static private String emailMessagePropertiesPath = "classpath:email-message.properties";
+    static private String smtpPropertiesPath =  "smtp.properties";
+    static private String domainPropertiesPath = "domain.properties";
+    static private String emailMessagePropertiesPath = "email-message.properties";
 
     static private String emailLogin;
     static private String password;
@@ -32,16 +31,16 @@ public class EmailHandler {
     static {
         try {
             Properties props = new Properties();
-            props.load(new FileInputStream(ResourceUtils.getFile(smtpPropertiesPath)));
+            props.load(new ClassPathResource(smtpPropertiesPath).getInputStream());
             emailLogin = props.getProperty("login");
             password = props.getProperty("password");
             smtpServer = props.getProperty("server");
             smtpServerPort = Integer.parseInt(props.getProperty("port"));
 
-            props.load(new FileInputStream(ResourceUtils.getFile(domainPropertiesPath)));
+            props.load(new ClassPathResource(domainPropertiesPath).getInputStream());
             domainName = props.getProperty("domain-name");
 
-            props.load(new FileInputStream(ResourceUtils.getFile(emailMessagePropertiesPath)));
+            props.load(new ClassPathResource(emailMessagePropertiesPath).getInputStream());
             onRegistrationSubject = props.getProperty("on-registration-subject");
             onDeletionSubject = props.getProperty("on-deletion-subject");
             onEmailChangeSubject = props.getProperty("on-email-change-subject");
@@ -64,6 +63,7 @@ public class EmailHandler {
         properties.put("mail.debug","true");
         properties.put("mail.smtp.port",smtpServerPort);
         properties.put("mail.smtp.host",smtpServer);
+        properties.put("mail.smtp.ssl.trust",smtpServer);
 
         Session session = Session.getInstance(properties, new Authenticator() {
             @Override
@@ -90,7 +90,7 @@ public class EmailHandler {
 
             Transport.send(msg);
         } catch (MessagingException e){
-
+            e.printStackTrace();
         }
 
     }

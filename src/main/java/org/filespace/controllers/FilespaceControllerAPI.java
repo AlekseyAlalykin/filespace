@@ -1,11 +1,13 @@
 package org.filespace.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.filespace.config.Response;
 import org.filespace.model.compoundrelations.FileFilespaceRelation;
-import org.filespace.model.entities.Role;
+import org.filespace.model.entities.File;
 import org.filespace.model.compoundrelations.UserFilespaceRelation;
+import org.filespace.model.entities.User;
 import org.filespace.model.intermediate.FilespaceFileInfo;
-import org.filespace.model.intermediate.FilespaceRole;
+import org.filespace.model.intermediate.FilespacePermissions;
 import org.filespace.model.entities.Filespace;
 import org.filespace.model.intermediate.FilespaceUserInfo;
 import org.filespace.security.SecurityUtil;
@@ -15,7 +17,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import javax.persistence.EntityNotFoundException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @RestController
@@ -29,12 +33,15 @@ public class FilespaceControllerAPI {
     private FilespaceService filespaceService;
 
     @GetMapping
-    public ResponseEntity getFilespaces(){
+    public ResponseEntity getFilespaces(@RequestParam(name = "q", required = false) String title){
 
-        List<FilespaceRole> filespaces = null;
+        List<FilespacePermissions> filespaces = null;
 
         try {
-            filespaces = filespaceService.getUserFilespaces(securityUtil.getCurrentUser());
+            if (title == null)
+                filespaces = filespaceService.getUserFilespaces(securityUtil.getCurrentUser());
+            else
+                filespaces = filespaceService.getUserFilespacesByTitle(securityUtil.getCurrentUser(), title);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,"Something went wrong, try again later"));
@@ -84,7 +91,7 @@ public class FilespaceControllerAPI {
 
     @GetMapping("/{id}")
     public ResponseEntity getFilespace(@PathVariable String id){
-        Filespace filespace;
+        FilespacePermissions filespace;
 
         try {
             Long lId = Long.parseLong(id);
@@ -92,15 +99,15 @@ public class FilespaceControllerAPI {
 
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Response.build(HttpStatus.NOT_FOUND,e.getMessage()));
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Response.build(HttpStatus.FORBIDDEN,e.getMessage()));
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST,e.getMessage()));
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
         return ResponseEntity
@@ -116,7 +123,7 @@ public class FilespaceControllerAPI {
                 throw new NullPointerException("No parameter \"title\" specified");
 
             Long lId = Long.parseLong(id);
-            filespaceService.updateFilespaceTitle(securityUtil.getCurrentUser(),lId,title);
+            filespaceService.updateFilespace(securityUtil.getCurrentUser(),lId,title);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
@@ -141,7 +148,7 @@ public class FilespaceControllerAPI {
                 throw new NullPointerException("No parameter \"title\" specified");
 
             Long lId = Long.parseLong(id);
-            filespaceService.updateFilespaceTitle(securityUtil.getCurrentUser(),lId, filespace.getTitle());
+            filespaceService.updateFilespace(securityUtil.getCurrentUser(),lId, filespace.getTitle());
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
@@ -214,16 +221,18 @@ public class FilespaceControllerAPI {
     }
 
     @PostMapping(path = "/{filespaceId}/files", headers = {"content-type=application/json"})
-    public ResponseEntity attachFileToFilespaceFromJSON(@PathVariable String filespaceId, @RequestBody FileFilespaceRelation relation){
+    public ResponseEntity attachFileToFilespaceFromJSON(@PathVariable String filespaceId,
+                                                        @RequestBody File file){
+        FileFilespaceRelation relation;
 
         try {
-            if (relation.getKey().getFileId() == null)
+            if (file.getId() == null)
                 throw new NullPointerException("No parameter \"fileId\" specified");
 
             Long lFilespaceId = Long.parseLong(filespaceId);
 
             relation = filespaceService.attachFileToFilespace(securityUtil.getCurrentUser(),
-                    lFilespaceId,relation.getKey().getFileId());
+                    lFilespaceId,file.getId());
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
@@ -243,13 +252,17 @@ public class FilespaceControllerAPI {
     }
 
     @GetMapping("/{id}/files")
-    public ResponseEntity getFilesFromFilespace(@PathVariable String id){
+    public ResponseEntity getFilesFromFilespace(@PathVariable String id,
+                                                @RequestParam(name = "q", required = false) String query){
         List<FilespaceFileInfo> list;
 
         try {
             Long lId = Long.parseLong(id);
 
-            list = filespaceService.getFilesFromFilespace(securityUtil.getCurrentUser(), lId);
+            if (query == null)
+                query = "";
+
+            list = filespaceService.getFilesFromFilespace(securityUtil.getCurrentUser(), lId, query);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
@@ -268,13 +281,17 @@ public class FilespaceControllerAPI {
     }
 
     @GetMapping("/{id}/users")
-    public ResponseEntity getUsersOfFilespace(@PathVariable String id){
+    public ResponseEntity getUsersOfFilespace(@PathVariable String id,
+                                              @RequestParam(name = "q", required = false) String query){
         List<FilespaceUserInfo> list;
 
         try {
             Long lId = Long.parseLong(id);
 
-            list = filespaceService.getUsersOfFilespace(securityUtil.getCurrentUser(), lId);
+            if (query == null)
+                query = "";
+
+            list = filespaceService.getUsersOfFilespace(securityUtil.getCurrentUser(), lId, query);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
@@ -293,23 +310,36 @@ public class FilespaceControllerAPI {
     }
 
     @PostMapping(path = "/{id}/users", headers = {"content-type=application/x-www-form-urlencoded"})
-    public ResponseEntity addUsersToFilespace(@PathVariable String id,
-                                              @RequestParam(value = "userId", required = false) String userId,
-                                              @RequestParam(value = "role", required = false) String role){
-        UserFilespaceRelation relation;
+    public ResponseEntity addUserToFilespace(@PathVariable String id,
+                                             @RequestParam(value = "userId", required = false) String userId,
+                                             @RequestParam(value = "username", required = false) String username,
+                                             @RequestParam(value = "allowDownload", required = false) Boolean allowDownload,
+                                             @RequestParam(value = "allowUpload", required = false) Boolean allowUpload,
+                                             @RequestParam(value = "allowDeletion", required = false) Boolean allowDeletion,
+                                             @RequestParam(value = "allowUserManagement", required = false) Boolean allowUserManagement,
+                                             @RequestParam(value = "allowFilespaceManagement", required = false) Boolean allowFilespaceManagement){
+
+        UserFilespaceRelation relation = new UserFilespaceRelation();
 
         try {
-            if (userId == null)
-                throw new NullPointerException("No parameter \"userId\" specified");
-
-            if (role == null)
-                throw new NullPointerException("No parameter \"role\" specified");
+            if (userId == null && username == null)
+                throw new NullPointerException("No user specified through \"userId\" or \"username\"");
 
             Long lFilespaceId = Long.parseLong(id);
-            Long lUserId = Long.parseLong(userId);
-            Role userRole = Role.valueOf(role.toUpperCase());
 
-            relation = filespaceService.attachUserToFilespace(securityUtil.getCurrentUser(), lFilespaceId, lUserId, userRole);
+            User user = new User();
+            if (userId != null)
+                user.setId(Long.parseLong(userId));
+            user.setUsername(username);
+
+            relation.setUser(user);
+            relation.setAllowDownload(Boolean.TRUE.equals(allowDownload));
+            relation.setAllowUpload(Boolean.TRUE.equals(allowUpload));
+            relation.setAllowDeletion(Boolean.TRUE.equals(allowDeletion));
+            relation.setAllowUserManagement(Boolean.TRUE.equals(allowUserManagement));
+            relation.setAllowFilespaceManagement(Boolean.TRUE.equals(allowFilespaceManagement));
+
+            relation = filespaceService.attachUserToFilespace(securityUtil.getCurrentUser(), lFilespaceId, relation);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
@@ -328,20 +358,26 @@ public class FilespaceControllerAPI {
     }
 
     @PostMapping(path = "/{id}/users", headers = {"content-type=application/json"})
-    public ResponseEntity addUsersToFilespaceFromJSON(@PathVariable String id, @RequestBody UserFilespaceRelation relation){
+    public ResponseEntity addUserToFilespaceFromJSON(@PathVariable String id, @RequestBody UserFilespaceRelation relation){
         UserFilespaceRelation newRelation;
-        System.out.println(relation.getKey().getUserId());
 
         try {
-            if (relation.getKey().getUserId() == null)
-                throw new NullPointerException("No parameter \"userId\" specified");
+            if (relation == null)
+                throw new NullPointerException("Couldn't convert to relation");
 
-            if (relation.getRole() == null)
-                throw new NullPointerException("No parameter \"role\" specified");
+            if (relation.getUser().getId() == null && relation.getUser().getUsername() == null)
+                throw new NullPointerException("No user specified through \"userId\" or \"username\"");
+
+            relation.setAllowFilespaceManagement(Boolean.TRUE.equals(relation.allowFilespaceManagement()));
+            relation.setAllowUserManagement(Boolean.TRUE.equals(relation.allowUserManagement()));
+            relation.setAllowDownload(Boolean.TRUE.equals(relation.allowDownload()));
+            relation.setAllowUpload(Boolean.TRUE.equals(relation.allowUpload()));
+            relation.setAllowDeletion(Boolean.TRUE.equals(relation.allowDeletion()));
+
 
             Long lFilespaceId = Long.parseLong(id);
 
-            newRelation = filespaceService.attachUserToFilespace(securityUtil.getCurrentUser(), lFilespaceId, relation.getKey().getUserId(), relation.getRole());
+            newRelation = filespaceService.attachUserToFilespace(securityUtil.getCurrentUser(), lFilespaceId, relation);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
@@ -351,6 +387,7 @@ public class FilespaceControllerAPI {
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
@@ -359,7 +396,7 @@ public class FilespaceControllerAPI {
                 .body(newRelation);
     }
 
-    @DeleteMapping("/{filespaceId}/users/{userId}")
+    @DeleteMapping(path = "/{filespaceId}/users/{userId}", headers = {"content-type=application/x-www-form-urlencoded"})
     public ResponseEntity deleteUserFromFilespace(@PathVariable String filespaceId,
                                                   @PathVariable(value = "userId") String userId,
                                                   @RequestParam(value = "deleteFiles",required = false) String deleteFiles){
@@ -388,6 +425,43 @@ public class FilespaceControllerAPI {
                 .body(Response.build(HttpStatus.OK, "Removed"));
     }
 
+    @DeleteMapping(path = "/{filespaceId}/users/{userId}")
+    public ResponseEntity deleteUserFromFilespaceJSON(@PathVariable String filespaceId,
+                                                  @PathVariable(value = "userId") String userId,
+                                                  @RequestBody(required = false) String jsonBody){
+        try {
+            Long lFilespaceId = Long.parseLong(filespaceId);
+            Long lUserId = Long.parseLong(userId);
+
+            Boolean bDeleteFiles;
+
+            if (jsonBody != null) {
+                Map<String, Object> result =
+                        new ObjectMapper().readValue(jsonBody, HashMap.class);
+
+                bDeleteFiles = Boolean.TRUE.equals(result.get("deleteFiles"));
+            } else
+                bDeleteFiles = false;
+
+            filespaceService.detachUserFromFilespace(securityUtil.getCurrentUser(), lFilespaceId,lUserId, bDeleteFiles);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
+
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(Response.build(HttpStatus.OK, "Removed"));
+    }
+
+
     @DeleteMapping("/{filespaceId}/files/{fileId}")
     public ResponseEntity deleteFileFromFilespace(@PathVariable(value = "filespaceId") String filespaceId,
                                                   @PathVariable(value = "fileId") String fileId){
@@ -415,15 +489,30 @@ public class FilespaceControllerAPI {
     }
 
     @PatchMapping(path = "/{filespaceId}/users/{userId}", headers = {"content-type=application/x-www-form-urlencoded"} )
-    public ResponseEntity updateUserRole(@PathVariable(value = "filespaceId") String filespaceId,
-                                         @PathVariable(value = "userId") String userId,
-                                         @RequestParam(value = "role") String role){
+    public ResponseEntity updateUserPermissions(@PathVariable(value = "filespaceId") String filespaceId,
+                                                @PathVariable(value = "userId") String userId,
+                                                @RequestParam(value = "allowDownload", required = false) Boolean allowDownload,
+                                                @RequestParam(value = "allowUpload", required = false) Boolean allowUpload,
+                                                @RequestParam(value = "allowDeletion", required = false) Boolean allowDeletion,
+                                                @RequestParam(value = "allowUserManagement", required = false) Boolean allowUserManagement,
+                                                @RequestParam(value = "allowFilespaceManagement", required = false) Boolean allowFilespaceManagement){
+        UserFilespaceRelation relation = new UserFilespaceRelation();
         try {
-            Long lFilespaceId = Long.parseLong(filespaceId);
-            Long lUserId = Long.parseLong(userId);
-            Role newRole = Role.valueOf(role.toUpperCase());
+            User user = new User();
+            user.setId(Long.parseLong(userId));
 
-            filespaceService.updateUserRole(securityUtil.getCurrentUser(),lFilespaceId,lUserId, newRole);
+            Filespace filespace = new Filespace();
+            filespace.setId(Long.parseLong(filespaceId));
+
+            relation.setFilespace(filespace);
+            relation.setUser(user);
+            relation.setAllowDownload(Boolean.TRUE.equals(allowDownload));
+            relation.setAllowUpload(Boolean.TRUE.equals(allowUpload));
+            relation.setAllowDeletion(Boolean.TRUE.equals(allowDeletion));
+            relation.setAllowUserManagement(Boolean.TRUE.equals(allowUserManagement));
+            relation.setAllowFilespaceManagement(Boolean.TRUE.equals(allowFilespaceManagement));
+
+            filespaceService.updateUserPermissions(securityUtil.getCurrentUser(), relation);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
@@ -438,21 +527,24 @@ public class FilespaceControllerAPI {
         }
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body(Response.build(HttpStatus.OK, "Role changed"));
+                .body(Response.build(HttpStatus.OK, "Permissions updated"));
     }
 
     @PatchMapping(path = "/{filespaceId}/users/{userId}", headers = {"content-type=application/json"} )
     public ResponseEntity updateUserRoleFromJSON(@PathVariable(value = "filespaceId") String filespaceId,
-                                         @PathVariable(value = "userId") String userId,
-                                         @RequestBody UserFilespaceRelation relation){
+                                                @PathVariable(value = "userId") String userId,
+                                                @RequestBody UserFilespaceRelation relation){
         try {
-            if (relation.getRole() == null)
-                throw new Exception("No role specified");
 
-            Long lFilespaceId = Long.parseLong(filespaceId);
-            Long lUserId = Long.parseLong(userId);
+            User user = new User();
+            user.setId(Long.parseLong(userId));
+            Filespace filespace = new Filespace();
+            filespace.setId(Long.parseLong(filespaceId));
 
-            filespaceService.updateUserRole(securityUtil.getCurrentUser(),lFilespaceId,lUserId, relation.getRole());
+            relation.setUser(user);
+            relation.setFilespace(filespace);
+
+            filespaceService.updateUserPermissions(securityUtil.getCurrentUser(), relation);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));

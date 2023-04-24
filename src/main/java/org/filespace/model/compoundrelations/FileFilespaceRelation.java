@@ -16,12 +16,12 @@ import java.time.LocalTime;
 @Entity
 @Table(name = "files_filespaces")
 public class FileFilespaceRelation implements EntityImplementation {
-
+    @JsonIgnore
     @NotNull
     @EmbeddedId
     private FileFilespaceKey key = new FileFilespaceKey();
 
-    @JsonIgnore
+    //@JsonIgnore
     @MapsId("fileId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "file_id")

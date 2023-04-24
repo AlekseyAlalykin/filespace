@@ -27,31 +27,6 @@ import org.springframework.web.filter.CorsFilter;
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    /*
-    private static String propertiesPath = "classpath:session.properties";
-
-    private static int maximumSessions;
-
-
-    static {
-
-        try {
-            FileInputStream fileInputStream = new FileInputStream(
-                    ResourceUtils.getFile(propertiesPath));
-            Properties properties = new Properties();
-            properties.load(fileInputStream);
-
-            maximumSessions = Integer.parseInt(properties.getProperty("maximum-sessions"));
-
-            fileInputStream.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-
-            maximumSessions = 1;
-        }
-    }
-    */
-
     @Autowired
     @Qualifier("userDetailsServiceImpl")
     private UserDetailsService userDetailsService;
@@ -156,8 +131,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         SessionRegistry sessions = context.getBean(SessionRegistry.class);
 
-        http.sessionManagement().maximumSessions(-1).
-                maxSessionsPreventsLogin(false).sessionRegistry(sessions);
+        http.sessionManagement()
+                .maximumSessions(-1).
+                maxSessionsPreventsLogin(false)
+                .expiredSessionStrategy(new CustomSessionInformationExpiredStrategy()).
+                sessionRegistry(sessions);
 
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         final CorsConfiguration config = new CorsConfiguration();
@@ -168,6 +146,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         config.addAllowedMethod("PUT");
         config.addAllowedMethod("POST");
         config.addAllowedMethod("PATCH");
+        config.addAllowedMethod("DELETE");
         config.setAllowCredentials(true);
         source.registerCorsConfiguration("/api/**", config);
 
@@ -222,9 +201,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return sessionRegistry;
     }
 
+
     @Bean
-    public RegisterSessionAuthenticationStrategy registerSessionAuthStr() {
-        return new RegisterSessionAuthenticationStrategy(sessionRegistry());
+    @Autowired
+    public RegisterSessionAuthenticationStrategy registerSessionAuthStr(SessionRegistry sessionRegistry) {
+        return new RegisterSessionAuthenticationStrategy(/*sessionRegistry()*/ sessionRegistry);
     }
 
     @Bean

@@ -40,7 +40,11 @@ public class FileService {
     private DiskStorageService diskStorageService;
 
     public List<File> getUserFiles(User user){
-        return user.getFiles();
+        return fileRepository.getAllBySenderOrderByPostDateDescPostTimeDesc(user);
+    }
+
+    public List<File> getUserFilesByFilename(User user, String filename){
+        return fileRepository.getAllBySenderAndFileNameIgnoreCaseStartingWithOrderByPostDateDescPostTimeDesc(user, filename);
     }
 
     @Transactional
@@ -48,7 +52,7 @@ public class FileService {
         ServletFileUpload upload = new ServletFileUpload();
         FileItemIterator iterStream = upload.getItemIterator(request);
 
-        String comment = "";
+        String description = "";
 
 
         boolean hasFiles = false;
@@ -94,10 +98,10 @@ public class FileService {
                 hasFiles = true;
             }
             else {
-                if (item.getFieldName().equals("comment")){
-                    comment = Streams.asString(stream);
-                    if (comment.length() > 200)
-                        comment = comment.substring(0,201);
+                if (item.getFieldName().equals("description")){
+                    description = Streams.asString(stream, "UTF-8");
+                    if (description.length() > 200)
+                        description = description.substring(0,201);
                 }
             }
 
@@ -108,7 +112,7 @@ public class FileService {
             throw new IllegalStateException("No files attached");
 
         for (File file: files){
-            file.setComment(comment);
+            file.setDescription(description);
         }
 
         try {
@@ -154,7 +158,7 @@ public class FileService {
                 LocalDate.now(),
                 LocalTime.now(),
                 0,
-                originalFile.getComment(),
+                originalFile.getDescription(),
                 originalFile.getMd5Hash());
 
         fileRepository.saveAndFlush(copy);
@@ -177,7 +181,7 @@ public class FileService {
             hasRight = true;
 
         for (UserFilespaceRelation relation: user.getUserFilespaceRelations()) {
-            if (relation.getFilespace().getFiles().contains(file)) {
+            if (relation.getFilespace().getFiles().contains(file) && relation.allowDownload()) {
                 hasRight = true;
                 break;
             }
@@ -225,7 +229,7 @@ public class FileService {
         return file;
     }
 
-    public void updateFileInfo(User user, Long fileId, String comment, String filename) throws Exception {
+    public void updateFileInfo(User user, Long fileId, String description, String filename) throws Exception {
         Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())
@@ -236,11 +240,11 @@ public class FileService {
         if (!user.getFiles().contains(file))
             throw new IllegalAccessException("No authority over file");
 
-        if (comment != null) {
-            if (comment.length() > 200)
-                comment = comment.substring(0, 201);
+        if (description != null) {
+            if (description.length() > 200)
+                description = description.substring(0, 201);
 
-            file.setComment(comment);
+            file.setDescription(description);
         }
 
         if (filename != null){

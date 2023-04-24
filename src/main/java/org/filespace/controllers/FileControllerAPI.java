@@ -1,7 +1,9 @@
 package org.filespace.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
+import org.apache.tomcat.util.http.fileupload.servlet.ServletRequestContext;
 import org.filespace.config.Response;
 import org.filespace.model.entities.File;
 import org.filespace.security.SecurityUtil;
@@ -10,11 +12,15 @@ import org.filespace.services.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
+import org.springframework.security.web.header.Header;
 import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.NotSupportedException;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -30,11 +36,14 @@ public class FileControllerAPI {
     private FileService fileService;
 
     @GetMapping
-    public ResponseEntity getFiles(){
+    public ResponseEntity getFiles(@RequestParam(name = "q", required = false) String filename){
         List<File> files = null;
 
         try {
-            files = fileService.getUserFiles(securityUtil.getCurrentUser());
+            if (filename == null)
+                files = fileService.getUserFiles(securityUtil.getCurrentUser());
+            else
+                files = fileService.getUserFilesByFilename(securityUtil.getCurrentUser(), filename);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,
@@ -49,10 +58,14 @@ public class FileControllerAPI {
     public ResponseEntity postFiles(HttpServletRequest request){
 
         long length = request.getContentLengthLong();
-        if (length == -1 || length > DiskStorageService.getMaxContentLength())
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST,
-                            "Content length is unknown or exceeds set limit of: " + DiskStorageService.getMaxContentLength()));
+        if (length == -1)
+            return ResponseEntity.status(HttpStatus.LENGTH_REQUIRED)
+                    .body(Response.build(HttpStatus.LENGTH_REQUIRED, "Content length is unknown"));
+
+        if (length > DiskStorageService.getMaxContentLength())
+            return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                    .body(Response.build(HttpStatus.PAYLOAD_TOO_LARGE,
+                            "Content length exceeds set limit of: " + DiskStorageService.getMaxContentLength()));
 
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
 
@@ -64,14 +77,10 @@ public class FileControllerAPI {
                 files = fileService.saveFileFromUser(request, securityUtil.getCurrentUser());
 
             } catch (FileUploadException e) {
-                e.printStackTrace();
-
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Response.build(HttpStatus.BAD_REQUEST,
                                 "File upload error: " + e.getMessage()));
             } catch (IOException e) {
-                e.printStackTrace();
-
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,
                                 "Internal server error: " + e.getMessage()));
@@ -80,34 +89,61 @@ public class FileControllerAPI {
                         .body(Response.build(HttpStatus.BAD_REQUEST,
                                 "File upload error: " + e.getMessage()));
             } catch (Exception e) {
-                e.printStackTrace();
-
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,
                                 "Internal server error: " + e.getMessage()));
             }
 
         } else {
-            String fileIdParam = request.getParameter("fileId");
-
-            if (fileIdParam == null)
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Response.build(HttpStatus.BAD_REQUEST,"No fileId parameter"));
-
             try {
-                Long fileId = Long.parseLong(fileIdParam);
+                String contentType = request.getContentType();
+                if (contentType == null)
+                    throw new IllegalArgumentException("Content-type header is not present");
+
+                Long fileId;
+
+                if (contentType.equals(MediaType.APPLICATION_JSON_VALUE)){
+                    StringBuffer stringBuffer = new StringBuffer();
+                    String line = null;
+
+                    BufferedReader reader = request.getReader();
+                    while ((line = reader.readLine()) != null)
+                        stringBuffer.append(line);
+
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    File deserializedRequest = objectMapper.readValue(stringBuffer.toString(), File.class);
+                    fileId = deserializedRequest.getId();
+
+                    if (fileId == null)
+                        throw new IllegalArgumentException("Null id no allowed");
+                } else if (contentType.equals(MediaType.APPLICATION_FORM_URLENCODED_VALUE)){
+                    String fileIdParam = request.getParameter("fileId");
+
+                    fileId = Long.parseLong(fileIdParam);
+
+                    if (fileIdParam == null)
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                .body(Response.build(HttpStatus.BAD_REQUEST,"No fileId parameter"));
+                } else
+                    throw new NotSupportedException("Media type isn't supported");
 
                 File file = fileService.copyFile(securityUtil.getCurrentUser(),fileId);
 
                 files = new LinkedList<>();
                 files.add(file);
             }  catch (IllegalAccessException e) {
-                e.printStackTrace();
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
-            } catch (Exception e) {
-                e.printStackTrace();
 
+            } catch(IllegalArgumentException e){
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+
+            } catch (NotSupportedException e){
+                return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                        .body(Response.build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, e.getMessage()));
+
+            } catch (Exception e) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,
                                 "Internal server error: " + e.getMessage()));
@@ -119,33 +155,64 @@ public class FileControllerAPI {
                 .body(files);
     }
 
-    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE, headers = {"accept=*"})
-    public ResponseEntity getFile(@PathVariable String id){
+    @GetMapping(value = "/{id}", produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_OCTET_STREAM_VALUE })
+    public ResponseEntity getFile(@PathVariable String id,
+                                  @RequestHeader(value = "Accept", required = false) String accept){
         List<Object> list = null;
+        File file = null;
 
         try {
             Long lId = Long.parseLong(id);
 
-            list = fileService.sendFileToUser(securityUtil.getCurrentUser(), lId);
+            if (accept == null)
+                throw new Exception("Accept header is not present");
+
+            if (accept.equals(MediaType.APPLICATION_JSON_VALUE))
+                file = fileService.getFileJSON(securityUtil.getCurrentUser(), lId);
+            else if (accept.equals(MediaType.ALL_VALUE))
+                list = fileService.sendFileToUser(securityUtil.getCurrentUser(), lId);
+            else
+                throw new NotSupportedException("Media type isn't supported");
+
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
+        } catch (NotSupportedException e){
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+                    .body(Response.build(HttpStatus.NOT_ACCEPTABLE, e.getMessage()));
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
-        File file = (File) list.get(0);
+        if (accept.equals(MediaType.APPLICATION_JSON_VALUE))
+            return ResponseEntity.status(HttpStatus.OK).body(file);
+        else {
+            File resourceFile = (File) list.get(0);
+            String filename;
+            try {
+                filename = URLEncoder.encode(resourceFile.getFileName(), "UTF-8").
+                        replace("+", "%20");
+            } catch (Exception e){
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,
+                                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase()));
+            }
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
-                .header(HttpHeaders.CONTENT_LENGTH, file.getSize().toString())
-                .body((InputStreamResource) list.get(1));
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                    .header(HttpHeaders.CONTENT_LENGTH, resourceFile.getSize().toString())
+                    .body((InputStreamResource) list.get(1));
+        }
     }
 
+    /*
     @GetMapping(value = "/{id}", headers = {"accept=application/json"})
     public ResponseEntity getFileJSON(@PathVariable String id){
         File file;
@@ -167,14 +234,15 @@ public class FileControllerAPI {
 
         return ResponseEntity.status(HttpStatus.OK).body(file);
     }
+     */
 
     @PatchMapping(path = "/{id}", headers = {"content-type=application/x-www-form-urlencoded"})
     public ResponseEntity updateFileInfo(@PathVariable String id,
-                                         @RequestParam(value = "comment", required = false) String comment,
+                                         @RequestParam(value = "description", required = false) String description,
                                          @RequestParam(value = "filename", required = false) String filename){
         try {
             Long lId = Long.parseLong(id);
-            fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, comment, filename);
+            fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, description, filename);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
@@ -188,7 +256,7 @@ public class FileControllerAPI {
     public ResponseEntity updateFileInfoFromJSON(@PathVariable String id, @RequestBody File file){
         try {
             Long lId = Long.parseLong(id);
-            fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, file.getComment(), file.getFileName());
+            fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, file.getDescription(), file.getFileName());
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));

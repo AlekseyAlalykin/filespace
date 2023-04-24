@@ -1,20 +1,14 @@
 package org.filespace.services;
 
-import org.filespace.config.SecurityConfig;
 import org.filespace.model.compoundrelations.UserFilespaceRelation;
 import org.filespace.model.entities.*;
+import org.filespace.model.intermediate.UserInfo;
 import org.filespace.repositories.*;
 import org.filespace.security.SecurityUtil;
 import org.filespace.security.SessionManager;
-import org.filespace.security.UserDetailsImpl;
 import org.filespace.services.threads.EmailThread;
 import org.filespace.services.threads.FileDeletingThread;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -134,6 +128,10 @@ public class UserService {
         return securityUtil.getCurrentUser();
     }
 
+    public List<UserInfo> getUsersList(String username, Integer limit){
+        return userRepository.findUsersByUsernameWithLimit(username, limit);
+    }
+
     @Transactional
     public void deleteUser(User requester, Long userId) throws Exception{
         //Проверка пользователя
@@ -240,6 +238,9 @@ public class UserService {
         if (!validationService.validate(newUserState))
             throw new IllegalArgumentException(validationService.getConstrainsViolations(newUserState));
 
+        //Инвалидация сессий
+        sessionManager.closeAllUserSessions(oldUserState);
+
         userRepository.save(newUserState);
 
         verificationTokenRepository.flush();
@@ -251,7 +252,7 @@ public class UserService {
             ).start();
 
         //Изменение данных пользователя в spring security
-        sessionManager.updateUsernameForUserSessions(oldUserState.getUsername(), newUserState.getUsername());
+        //sessionManager.updateUsernameForUserSessions(oldUserState, oldUserState.getUsername(), newUserState.getUsername());
         /*
         Collection<SimpleGrantedAuthority> authorities =
                 (Collection<SimpleGrantedAuthority>)SecurityContextHolder.getContext()
@@ -261,9 +262,11 @@ public class UserService {
 
          */
 
-
+        /*
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         userDetails.setUsername(newUserState.getUsername());
+
+         */
 
 
         /*
@@ -272,8 +275,10 @@ public class UserService {
         SecurityContextHolder.getContext().setAuthentication(result);
         */
 
-        if (password != null)
-            sessionManager.closeAllUserSessions(oldUserState);
+        //if (password != null)
+        //sessionManager.closeAllUserSessions(newUserState);
+        //Инвалидация сессий
+        //sessionManager.closeAllUserSessions(oldUserState);
     }
 
     //Удаляет пользователя если регистрация аккаунта не была подтверждена
@@ -312,7 +317,7 @@ public class UserService {
 
         List<String> md5Hashes = new LinkedList<>();
         //Удаление связей файлов пользователя и filespace
-        for (File file: fileRepository.getAllBySender(user)){
+        for (File file: fileRepository.getAllBySenderOrderByPostDateDescPostTimeDesc(user)){
             //Если файлов с данным хеш значение больше нет
             if (fileRepository.countAllByMd5Hash(file.getMd5Hash()) == 1)
                 md5Hashes.add(file.getMd5Hash());
@@ -360,12 +365,22 @@ public class UserService {
 
         User user = verificationToken.getUser();
 
+        if (userRepository.existsByEmail(verificationToken.getValue())) {
+            User sameEmailUser = userRepository.findUserByEmail(verificationToken.getValue());
+            if (!deleteIfInactive(sameEmailUser))
+                throw new IllegalArgumentException("Such email has already been taken");
+        }
+
+        if (!validationService.validate(user))
+            throw new IllegalArgumentException(validationService.getConstrainsViolations(user));
+
         user.setEmail(verificationToken.getValue());
         verificationToken.setConfirmed(true);
 
         userRepository.saveAndFlush(user);
         verificationTokenRepository.saveAndFlush(verificationToken);
 
+        //Инвалидирую сессии
         sessionManager.closeAllUserSessions(user);
     }
 

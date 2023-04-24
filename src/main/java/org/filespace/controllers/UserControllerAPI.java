@@ -2,6 +2,7 @@ package org.filespace.controllers;
 
 import org.filespace.config.Response;
 import org.filespace.model.entities.User;
+import org.filespace.model.intermediate.UserInfo;
 import org.filespace.security.SecurityUtil;
 import org.filespace.security.SessionManager;
 import org.filespace.services.UserService;
@@ -12,10 +13,11 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
+import java.util.List;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api")
 public class UserControllerAPI {
 
     @Autowired
@@ -27,7 +29,7 @@ public class UserControllerAPI {
     @Autowired
     private SessionManager sessionManager;
 
-    @PostMapping(headers = {"content-type=application/x-www-form-urlencoded"})
+    @PostMapping(path = "/users", headers = {"content-type=application/x-www-form-urlencoded"})
     public ResponseEntity createUser(@RequestParam("username") String username,
                                      @RequestParam("password") String password,
                                      @RequestParam("email") String email){
@@ -47,7 +49,7 @@ public class UserControllerAPI {
                 .body(user);
     }
 
-    @PostMapping(headers = {"content-type=application/json"})
+    @PostMapping(path = "/users", headers = {"content-type=application/json"})
     public ResponseEntity createUserFromJSON(@RequestBody User user){
 
         try {
@@ -70,14 +72,14 @@ public class UserControllerAPI {
                 .body(user);
     }
 
-    @GetMapping("/logout")
+    @GetMapping(path = "/user/logout")
     public ResponseEntity logout(){
         sessionManager.closeAllUserSessions(securityUtil.getCurrentUser());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(Response.build(HttpStatus.OK, HttpStatus.OK.getReasonPhrase()));
     }
 
-    @GetMapping
+    @GetMapping(path = "/user")
     public ResponseEntity getCurrentUser(){
         User user;
         try {
@@ -91,7 +93,7 @@ public class UserControllerAPI {
                 .body(user);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(path = "/users/{id}")
     public ResponseEntity getUser(@PathVariable String id){
         User user;
 
@@ -108,7 +110,26 @@ public class UserControllerAPI {
                 .body(user);
     }
 
-    @PatchMapping(path = "/{id}", headers = {"content-type=application/x-www-form-urlencoded"})
+    @GetMapping(path = "/users")
+    public ResponseEntity getUsers(@RequestParam(name = "q", required = true) String query,
+                                   @RequestParam(name = "n", required = false) Integer limit ){
+        List<UserInfo> list = null;
+        try {
+            if (limit == null)
+                limit = 10;
+
+            list = userService.getUsersList(query, limit);
+
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, "No user with such id found"));
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(list);
+    }
+
+    @PatchMapping(path = "/users/{id}", headers = {"content-type=application/x-www-form-urlencoded"})
     public ResponseEntity updateUser(@PathVariable String id,
                                      @RequestParam(value = "username",required = false) String username,
                                      @RequestParam(value = "password",required = false) String password,
@@ -134,7 +155,7 @@ public class UserControllerAPI {
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
     }
 
-    @PatchMapping(path = "/{id}", headers = {"content-type=application/json"})
+    @PatchMapping(path = "/users/{id}", headers = {"content-type=application/json"})
     public ResponseEntity updateUserFromJSON(@PathVariable String id, @RequestBody User user){
 
         try {
@@ -158,7 +179,7 @@ public class UserControllerAPI {
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping(path = "/users/{id}")
     public ResponseEntity deleteUser(@PathVariable String id){
 
         try {
@@ -181,7 +202,7 @@ public class UserControllerAPI {
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
     }
 
-    @GetMapping("/registration/{token}")
+    @GetMapping(path = "/user/registration/{token}")
     public ResponseEntity confirmRegistration(@PathVariable String token){
         try {
             userService.confirmRegistration(token);
@@ -199,7 +220,7 @@ public class UserControllerAPI {
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"Confirmed"));
     }
 
-    @GetMapping("/deletion/{token}")
+    @GetMapping(path = "/user/deletion/{token}")
     public ResponseEntity confirmDeletion(@PathVariable String token){
         try {
             userService.confirmDeletion(token);
@@ -217,7 +238,7 @@ public class UserControllerAPI {
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK, "Deleted"));
     }
 
-    @GetMapping("/email-change/{token}")
+    @GetMapping(path = "/user/email-change/{token}")
     public ResponseEntity confirmEmailChange(@PathVariable String token){
         try {
             userService.confirmEmailChange(token);

@@ -11,9 +11,11 @@ import java.util.List;
 public interface FileRepository extends JpaRepository<File, Long> {
     public boolean existsByMd5Hash(String md5Hash);
 
-    public List<File> getAllBySender(User sender);
+    public List<File> getAllBySenderOrderByPostDateDescPostTimeDesc(User sender);
 
     public void deleteAllBySender(User sender);
 
     public int countAllByMd5Hash(String md5Hash);
+
+    public List<File> getAllBySenderAndFileNameIgnoreCaseStartingWithOrderByPostDateDescPostTimeDesc(User sender, String filename);
 }

@@ -18,10 +18,15 @@ public interface FileFilespaceRelationRepository extends JpaRepository<FileFiles
 
     public boolean existsByFileAndFilespace(File file, Filespace filespace);
 
-    @Query(value = "SELECT id, file_name as fileName, size, sender_id as senderId, comment, " +
-            "number_of_downloads as numberOfDownloads, attach_time as attachTime, attach_date as attachDate " +
-            "FROM files_filespaces join files on file_id = id WHERE filespace_id = ?1", nativeQuery = true)
-    public List<FilespaceFileInfo> getFilesFromFilespace(Long id);
+    @Query(value =
+            "SELECT file_id AS fileId, file_name AS fileName, size, sender_id AS senderId, description, " +
+            "number_of_downloads AS numberOfDownloads, attach_time AS attachTime, attach_date AS attachDate, username " +
+            "FROM files_filespaces " +
+            "JOIN files ON file_id = files.id " +
+            "JOIN users ON sender_id = users.id " +
+            "WHERE filespace_id = ?1 AND LOWER(file_name) LIKE LOWER(CONCAT(?2,'%')) " +
+            "ORDER BY attach_date DESC, attach_time DESC", nativeQuery = true)
+    public List<FilespaceFileInfo> getFilesFromFilespace(Long id, String filename);
 
     @Modifying
     @Query(value = "DELETE FROM files_filespaces WHERE file_id IN " +

@@ -17,20 +17,8 @@ public class SessionManager {
     public void closeAllUserSessions(User user){
         for (SessionInformation sessionInformation:
                 sessionRegistry.getAllSessions(UserDetailsServiceImpl.fromUser(user), false)){
-            //System.out.println(sessionInformation.getSessionId() + " : " + sessionInformation + " : " + sessionInformation.getPrincipal().toString());
             sessionInformation.expireNow();
+            //sessionRegistry.removeSessionInformation(sessionInformation.getSessionId());
         }
     }
-
-    public void updateUsernameForUserSessions(String oldUsername, String newUsername){
-
-
-        for (Object principal: sessionRegistry.getAllPrincipals()){
-            System.out.println(principal);
-            UserDetailsImpl userDetails = (UserDetailsImpl)principal;
-            if (userDetails.getUsername().equals(oldUsername))
-                userDetails.setUsername(newUsername);
-        }
-    }
-
 }

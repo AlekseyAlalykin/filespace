@@ -4,7 +4,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.springframework.core.io.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
@@ -14,7 +13,7 @@ import java.util.Properties;
 @Service
 public class DiskStorageService {
 
-    private static String propertiesPath = "classpath:file-manager.properties";
+    private static String propertiesPath = "file-manager.properties";
 
     private static String storageDirectory;
 
@@ -28,22 +27,35 @@ public class DiskStorageService {
 
     static {
         try {
-            FileInputStream fileInputStream = new FileInputStream(
-                    ResourceUtils.getFile(propertiesPath));
+            InputStream is = new ClassPathResource(propertiesPath).getInputStream();
+                    //iskStorageService.class.getResourceAsStream(propertiesPath);
+            /*
+            FileInputStream is = new FileInputStream(
+                    //ResourceUtils.getFile(propertiesPath)
+            );
+
+            */
             Properties properties = new Properties();
-            properties.load(fileInputStream);
+            properties.load(is);
 
             storageDirectory = properties.getProperty("storage-directory");
             temporaryDirectory = properties.getProperty("temporary-directory");
             maxContentLength = Long.parseLong(properties.getProperty("max-content-length"));
 
-            fileInputStream.close();
+            is.close();
         } catch (Exception e) {
             e.printStackTrace();
 
             storageDirectory = "C:/FileServiceRootDirectory";
             temporaryDirectory = "C:/temp";
             maxContentLength = 1024*1024*10L;
+        }
+
+        try {
+            Files.createDirectories(Paths.get(storageDirectory));
+            Files.createDirectories(Paths.get(temporaryDirectory));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

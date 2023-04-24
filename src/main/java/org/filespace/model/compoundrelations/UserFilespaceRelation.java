@@ -8,16 +8,18 @@ import org.filespace.model.entities.User;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "users_filespaces")
 public class UserFilespaceRelation implements EntityImplementation {
-
+    @JsonIgnore
     @NotNull
     @EmbeddedId
     private UserFilespaceKey key = new UserFilespaceKey();
 
-    @JsonIgnore
+    //@JsonIgnore
     @NotNull
     @MapsId("userId")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -31,18 +33,35 @@ public class UserFilespaceRelation implements EntityImplementation {
     @JoinColumn(name = "filespace_id")
     private Filespace filespace;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role",
-            nullable = false,
-            length = 15)
-    private Role role;
+    @Column(name = "allow_download",
+            nullable = false)
+    private Boolean allowDownload;
+
+    @Column(name = "allow_upload",
+            nullable = false)
+    private Boolean allowUpload;
+
+    @Column(name = "allow_deletion",
+            nullable = false)
+    private Boolean allowDeletion;
+
+    @Column(name = "allow_user_management",
+            nullable = false)
+    private Boolean allowUserManagement;
+
+    @Column(name = "allow_filespace_management",
+            nullable = false)
+    private Boolean allowFilespaceManagement;
+
+    @Column(name = "join_date",
+            nullable = false)
+    private LocalDate joinDate;
+
+    @Column(name = "join_time",
+            nullable = false)
+    private LocalTime joinTime;
 
     public UserFilespaceRelation() {
-    }
-
-    public UserFilespaceRelation(@NotNull UserFilespaceKey key, Role role) {
-        this.key = key;
-        this.role = role;
     }
 
     public UserFilespaceKey getKey() {
@@ -69,11 +88,59 @@ public class UserFilespaceRelation implements EntityImplementation {
         this.filespace = filespace;
     }
 
-    public Role getRole() {
-        return role;
+    public Boolean allowDownload() {
+        return allowDownload;
     }
 
-    public void setRole(Role role) {
-        this.role = role;
+    public void setAllowDownload(Boolean allowDownload) {
+        this.allowDownload = allowDownload;
+    }
+
+    public Boolean allowUpload() {
+        return allowUpload;
+    }
+
+    public void setAllowUpload(Boolean allowUpload) {
+        this.allowUpload = allowUpload;
+    }
+
+    public Boolean allowDeletion() {
+        return allowDeletion;
+    }
+
+    public void setAllowDeletion(Boolean allowDeletion) {
+        this.allowDeletion = allowDeletion;
+    }
+
+    public Boolean allowUserManagement() {
+        return allowUserManagement;
+    }
+
+    public void setAllowUserManagement(Boolean allowManagement) {
+        this.allowUserManagement = allowManagement;
+    }
+
+    public Boolean allowFilespaceManagement() {
+        return allowFilespaceManagement;
+    }
+
+    public void setAllowFilespaceManagement(Boolean allowFilespaceManagement) {
+        this.allowFilespaceManagement = allowFilespaceManagement;
+    }
+
+    public LocalDate getJoinDate() {
+        return joinDate;
+    }
+
+    public void setJoinDate(LocalDate joinDate) {
+        this.joinDate = joinDate;
+    }
+
+    public LocalTime getJoinTime() {
+        return joinTime;
+    }
+
+    public void setJoinTime(LocalTime joinTime) {
+        this.joinTime = joinTime;
     }
 }

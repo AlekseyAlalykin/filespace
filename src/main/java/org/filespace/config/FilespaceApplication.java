@@ -5,6 +5,8 @@ import org.filespace.services.EmailHandler;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
@@ -18,50 +20,17 @@ import java.util.regex.Pattern;
 @PropertySource("classpath:application.properties")
 @EntityScan("org.filespace.model")
 @EnableJpaRepositories("org.filespace.repositories")
-public class FilespaceApplication {
+public class FilespaceApplication /*extends SpringBootServletInitializer*/ {
 
 	public static void main(String[] args) {
-
-		/*
-		String message = ".pdf";
-		Pattern pattern = Pattern.compile(
-				"^(?!^(PRN|AUX|CLOCK\\$|NUL|CON|COM\\d|LPT\\d|\\..*)(\\..+)?$)[^\\x00-\\x1f\\\\?*:\\\";|/]+$",
-				Pattern.CASE_INSENSITIVE);
-		Matcher matcher = pattern.matcher(message);
-		System.out.println(matcher.matches());
-
-		 */
-
-
-
-
-		//AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(FilespaceContextConfig.class);
-
-		//DiskStorageService fileService = context.getBean(DiskStorageService.class);
-
-		//System.out.println(fileService.getRootDirectory());
-		/*
-		User user1 = new User("name1","password1","salt1","email1", LocalDate.now());
-		File file1 = new File(user1,"filename1",1024L,LocalDate.now(), LocalTime.now(),
-				0,"comment1","somehashvalue1");
-		*/
-
-
-		//SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
-
-		/*
-		EmailHandler emailHandler = new EmailHandler();
-
-		try {
-			emailHandler.sendMail("lepi33@yandex.ru", "Тестовое сообщение", "Это тестовое сообщение переданное через javax.mail");
-		} catch (IOException e){
-			e.printStackTrace();
-		}
-
-		 */
-
 		SpringApplication.run(FilespaceApplication.class, args);
 	}
 
+	/*
+	@Override
+	protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+		return builder.sources(FilespaceApplication.class);
+	}
 
+	 */
 }

@@ -55,10 +55,10 @@ public class File extends Model {
     private Integer numberOfDownloads;
 
     @NotNull
-    @Column(name = "comment",
+    @Column(name = "description",
             nullable = false,
             length = 200)
-    private String comment;
+    private String description;
 
     @JsonIgnore
     @NotNull
@@ -81,14 +81,14 @@ public class File extends Model {
 
     }
 
-    public File(User sender, String fileName, Long size, LocalDate postDate, LocalTime postTime, Integer numberOfDownloads, String comment, String md5Hash) {
+    public File(User sender, String fileName, Long size, LocalDate postDate, LocalTime postTime, Integer numberOfDownloads, String description, String md5Hash) {
         this.sender = sender;
         this.fileName = fileName;
         this.size = size;
         this.postDate = postDate;
         this.postTime = postTime;
         this.numberOfDownloads = numberOfDownloads;
-        this.comment = comment;
+        this.description = description;
         this.md5Hash = md5Hash;
     }
 
@@ -124,12 +124,12 @@ public class File extends Model {
         this.numberOfDownloads = numberOfDownloads;
     }
 
-    public String getComment() {
-        return comment;
+    public String getDescription() {
+        return description;
     }
 
-    public void setComment(String comment) {
-        this.comment = comment;
+    public void setDescription(String comment) {
+        this.description = comment;
     }
 
     public String getFileName() {

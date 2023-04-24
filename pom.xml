@@ -16,6 +16,8 @@
 
 	<version>0.0.1-SNAPSHOT</version>
 
+	<packaging>jar</packaging>
+
 	<name>filespace</name>
 
 	<description>File web service</description>
@@ -24,6 +26,7 @@
 		<java.version>14</java.version>
 		<spring.version>5.3.19</spring.version>
 		<springsecurity.version>5.6.3</springsecurity.version>
+		<maven.test.skip>true</maven.test.skip>
 	</properties>
 
 	<dependencies>
@@ -81,8 +84,17 @@
 			<version>2.2</version>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-tomcat -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
+			<scope>provided</scope>
+		</dependency>
 
-
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
 
 
 
@@ -140,14 +152,6 @@
 		</dependency>
 
 
-		<!-- https://mvnrepository.com/artifact/org.hibernate/hibernate-annotations -->
-		<dependency>
-			<groupId>org.hibernate</groupId>
-			<artifactId>hibernate-annotations</artifactId>
-			<version>3.5.6-Final</version>
-		</dependency>
-
-
 		<!-- https://mvnrepository.com/artifact/org.hibernate.javax.persistence/hibernate-jpa-2.1-api -->
 		<dependency>
 			<groupId>org.hibernate.javax.persistence</groupId>
@@ -172,13 +176,6 @@
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
 			<version>6.0.13.Final</version>
-		</dependency>
-
-		<!-- https://mvnrepository.com/artifact/org.springframework.session/spring-session-data-redis -->
-		<dependency>
-			<groupId>org.springframework.session</groupId>
-			<artifactId>spring-session-data-redis</artifactId>
-			<version>2.6.3</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
