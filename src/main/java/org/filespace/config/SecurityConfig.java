@@ -33,99 +33,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private ApplicationContext context;
-    /*
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-        auth.inMemoryAuthentication().withUser("user").password("{noop}password").roles("USER");
-        //auth.userDetailsService(userDetailsService);
-    }
-
-     */
-
-    /*
-    @Configuration
-    @Order(1)
-    public class BasicHttpSecurityConfig extends WebSecurityConfigurerAdapter{
-
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            SessionRegistry sessions = context.getBean(SessionRegistry.class);
-
-            http.sessionManagement().maximumSessions(5).
-                    maxSessionsPreventsLogin(false).sessionRegistry(sessions);
-
-            final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-            final CorsConfiguration config = new CorsConfiguration();
-
-            config.addAllowedOriginPattern("*");
-            config.addAllowedHeader("*");
-            config.addAllowedMethod("GET");
-            config.addAllowedMethod("PUT");
-            config.addAllowedMethod("POST");
-            config.addAllowedMethod("PATCH");
-            config.setAllowCredentials(true);
-            source.registerCorsConfiguration("/api/**", config);
-
-            http.addFilterBefore(new CorsFilter(source), LogoutFilter.class)
-                    .csrf()
-                        .disable()
-                    .antMatcher("/api/**")
-                    .authorizeRequests()
-                        .antMatchers(HttpMethod.POST,"/api/users")
-                            .permitAll()
-                    .and()
-                    .authorizeRequests()
-                        .antMatchers(HttpMethod.GET,
-                                "/api/users/registration/**",
-                                "/api/users/deletion/**",
-                                "/api/users/email-change/**")
-                            .permitAll()
-                    .and()
-                    .authorizeRequests()
-                        .antMatchers("/api/**").authenticated()
-                    .and()
-
-                        //.sessionManagement().maximumSessions(5).sessionRegistry(sessions).and().and()
-
-
-                        .httpBasic();
-
-        }
-    }
-
-    @Configuration
-    @Order(2)
-    public class FormLoginSecurityConfig extends WebSecurityConfigurerAdapter{
-
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            SessionRegistry sessions = context.getBean(SessionRegistry.class);
-
-            http.sessionManagement().maximumSessions(5).
-                    maxSessionsPreventsLogin(false).sessionRegistry(sessions);
-
-            http
-                    .csrf()
-                        .disable()
-                    .formLogin()
-                        .loginPage("/login")
-                            .defaultSuccessUrl("/test")
-                    .and().logout()
-                        .logoutUrl("/logout")
-                            .deleteCookies("JSESSIONID")
-                                .logoutSuccessUrl("/login")
-                    .and().authorizeRequests()
-                        .antMatchers(HttpMethod.GET,"/registration", "/login")
-                            .permitAll()
-                    .and().authorizeRequests()
-                        .anyRequest()
-                            .authenticated();
-
-            http.requiresChannel().antMatchers("/api/**").requiresSecure();
-        }
-
-    }
-    */
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -159,10 +66,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .permitAll()
                 .and()
                 .authorizeRequests()
-                .antMatchers(HttpMethod.GET,
-                        "/api/users/registration/**",
-                        "/api/users/deletion/**",
-                        "/api/users/email-change/**")
+                .antMatchers(HttpMethod.GET, "/api/user/token/**")
                 .permitAll()
                 .and()
                 .authorizeRequests()

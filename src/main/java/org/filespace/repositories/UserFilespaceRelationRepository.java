@@ -13,20 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserFilespaceRelationRepository extends JpaRepository<UserFilespaceRelation, UserFilespaceKey> {
-    public UserFilespaceRelation getByKey(UserFilespaceKey key);
-
     public List<UserFilespaceRelation> getByUser(User user);
-
-    @Query(value =
-            "SELECT id, title, allow_download AS allowDownload, allow_upload AS allowUpload, allow_deletion AS allowDeletion, " +
-            "allow_user_management AS allowUserManagement, allow_filespace_management AS allowFilespaceManagement, " +
-            "join_date AS joinDate, join_time AS joinTime " +
-            "FROM users_filespaces " +
-            "JOIN filespaces ON filespace_id = id " +
-            "WHERE user_id = ?1 " +
-            "ORDER BY joinDate DESC, joinTime DESC",
-            nativeQuery = true)
-    public List<FilespacePermissions> findFilespacesAndPermissionsByUserId(Long userId);
 
     @Query(value =
             "SELECT id, title, allow_download AS allowDownload, allow_upload AS allowUpload, allow_deletion AS allowDeletion, " +
@@ -51,10 +38,6 @@ public interface UserFilespaceRelationRepository extends JpaRepository<UserFiles
     public Optional<FilespacePermissions> findFilespaceAndPermissionsByUserIdAndFilespaceId(Long userId, Long filespaceId);
 
     public void deleteByFilespace(Filespace filespace);
-
-    public void deleteByUser(User user);
-
-    public void deleteByUserAndFilespace(User user, Filespace filespace);
 
     @Query(value =
             "SELECT id, username, allow_download AS allowDownload, allow_upload AS allowUpload, allow_deletion AS allowDeletion, " +

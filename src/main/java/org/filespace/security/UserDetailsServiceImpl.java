@@ -28,11 +28,5 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public static UserDetails fromUser(User user) {
         return new UserDetailsImpl(user.getUsername(), user.getPassword(),
                 user.isEnabled(), new LinkedList<GrantedAuthority>());
-        /*
-        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(),
-                user.isEnabled(), true, true, true, new LinkedList<GrantedAuthority>());
-
-         */
-        //return new org.springframework.security.core.userdetails.User(user.getUsername(),user.getPassword(), new LinkedList<GrantedAuthority>());
     }
 }

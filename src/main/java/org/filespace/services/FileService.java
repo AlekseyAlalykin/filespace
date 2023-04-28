@@ -31,9 +31,6 @@ public class FileService {
     private FileRepository fileRepository;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private FileFilespaceRelationRepository fileFilespaceRelationRepository;
 
     @Autowired

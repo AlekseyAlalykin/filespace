@@ -18,6 +18,8 @@ target/
 *.iws
 *.iml
 *.ipr
+/src/main/resources/SSL/filespace.p12
+/src/main/resources/application.properties
 
 ### NetBeans ###
 /nbproject/private/
@@ -31,5 +33,3 @@ build/
 
 ### VS Code ###
 .vscode/
-/src/main/resources/smtp.properties
-/src/main/resources/SSL/filespace.p12

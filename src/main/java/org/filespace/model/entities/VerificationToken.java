@@ -15,7 +15,7 @@ public class VerificationToken extends Model{
 
     @NotNull
     @Column(name = "token",
-            length = 50,
+            length = 36,
             unique = true)
     private String token;
 
@@ -25,18 +25,24 @@ public class VerificationToken extends Model{
     private User user;
 
     @NotNull
-    @Column(name = "issue_date")
+    @Column(name = "issue_date",
+            nullable = false)
     private LocalDate issueDate;
 
     @NotNull
-    @Column(name = "issue_time")
+    @Column(name = "issue_time",
+            nullable = false)
     private LocalTime issueTime;
 
     @NotNull
-    @Column(name = "token_type")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "token_type",
+            length = 12,
+            nullable = false)
     private TokenType type;
 
-    @Column(name = "is_confirmed")
+    @Column(name = "is_confirmed",
+            nullable = false)
     private Boolean isConfirmed;
 
     @Column(name = "value",

@@ -3,7 +3,6 @@ package org.filespace.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
-import org.apache.tomcat.util.http.fileupload.servlet.ServletRequestContext;
 import org.filespace.config.Response;
 import org.filespace.model.entities.File;
 import org.filespace.security.SecurityUtil;
@@ -12,7 +11,6 @@ import org.filespace.services.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
-import org.springframework.security.web.header.Header;
 import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
@@ -35,15 +33,18 @@ public class FileControllerAPI {
     @Autowired
     private FileService fileService;
 
+    @Autowired
+    private DiskStorageService diskStorageService;
+
     @GetMapping
-    public ResponseEntity getFiles(@RequestParam(name = "q", required = false) String filename){
+    public ResponseEntity getFiles(@RequestParam(name = "q", required = false) String query){
         List<File> files = null;
 
         try {
-            if (filename == null)
+            if (query == null)
                 files = fileService.getUserFiles(securityUtil.getCurrentUser());
             else
-                files = fileService.getUserFilesByFilename(securityUtil.getCurrentUser(), filename);
+                files = fileService.getUserFilesByFilename(securityUtil.getCurrentUser(), query);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,
@@ -62,16 +63,16 @@ public class FileControllerAPI {
             return ResponseEntity.status(HttpStatus.LENGTH_REQUIRED)
                     .body(Response.build(HttpStatus.LENGTH_REQUIRED, "Content length is unknown"));
 
-        if (length > DiskStorageService.getMaxContentLength())
+        if (length > diskStorageService.getMaxContentLength())
             return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                     .body(Response.build(HttpStatus.PAYLOAD_TOO_LARGE,
-                            "Content length exceeds set limit of: " + DiskStorageService.getMaxContentLength()));
+                            "Content length exceeds set limit of: " + diskStorageService.getMaxContentLength()));
 
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
 
         List<File> files;
 
-        //Если мултипарт то загрузка нового файла иначе копирование
+        //Если мултипарт то загрузка нового файла иначе копирование существующего
         if (isMultipart){
             try {
                 files = fileService.saveFileFromUser(request, securityUtil.getCurrentUser());
@@ -156,8 +157,9 @@ public class FileControllerAPI {
     }
 
     @GetMapping(value = "/{id}", produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_OCTET_STREAM_VALUE })
-    public ResponseEntity getFile(@PathVariable String id,
-                                  @RequestHeader(value = "Accept", required = false) String accept){
+    public ResponseEntity getFile(
+            @PathVariable String id,
+            @RequestHeader(value = "Accept", required = false) String accept){
         List<Object> list = null;
         File file = null;
 
@@ -212,34 +214,11 @@ public class FileControllerAPI {
         }
     }
 
-    /*
-    @GetMapping(value = "/{id}", headers = {"accept=application/json"})
-    public ResponseEntity getFileJSON(@PathVariable String id){
-        File file;
-
-        try {
-            Long lId = Long.parseLong(id);
-
-            file = fileService.getFileJSON(securityUtil.getCurrentUser(), lId);
-        } catch (IllegalAccessException e){
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
-        } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
-        }
-
-        return ResponseEntity.status(HttpStatus.OK).body(file);
-    }
-     */
-
-    @PatchMapping(path = "/{id}", headers = {"content-type=application/x-www-form-urlencoded"})
-    public ResponseEntity updateFileInfo(@PathVariable String id,
-                                         @RequestParam(value = "description", required = false) String description,
-                                         @RequestParam(value = "filename", required = false) String filename){
+    @PatchMapping(path = "/{id}", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    public ResponseEntity updateFileInfoConsumesURLEncoded(
+            @PathVariable String id,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String filename){
         try {
             Long lId = Long.parseLong(id);
             fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, description, filename);
@@ -252,8 +231,8 @@ public class FileControllerAPI {
                 .body(Response.build(HttpStatus.OK, "File info changed"));
     }
 
-    @PatchMapping(path = "/{id}", headers = {"content-type=application/json"})
-    public ResponseEntity updateFileInfoFromJSON(@PathVariable String id, @RequestBody File file){
+    @PatchMapping(path = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE })
+    public ResponseEntity updateFileInfo(@PathVariable String id, @RequestBody File file){
         try {
             Long lId = Long.parseLong(id);
             fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, file.getDescription(), file.getFileName());

@@ -40,11 +40,6 @@ public class FilespaceService {
     @Autowired
     private ValidationService validationService;
 
-    public List<FilespacePermissions> getUserFilespaces(User user){
-        List<FilespacePermissions> list = userFilespaceRelationRepository.findFilespacesAndPermissionsByUserId(user.getId());
-
-        return list;
-    }
 
     public List<FilespacePermissions> getUserFilespacesByTitle(User user, String title){
         List<FilespacePermissions> list = userFilespaceRelationRepository.findFilespacesAndPermissionsByUserIdAndTitle(user.getId(), title);

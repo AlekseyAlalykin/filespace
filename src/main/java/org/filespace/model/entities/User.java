@@ -64,14 +64,6 @@ public class User extends Model {
             fetch = FetchType.LAZY)
     private Set<UserFilespaceRelation> userFilespaceRelations;
 
-    /*
-    @JsonIgnore
-    @OneToMany(mappedBy = "user",
-            fetch = FetchType.LAZY)
-    private List<VerificationToken> tokens;
-
-     */
-
     public User(){
 
     }

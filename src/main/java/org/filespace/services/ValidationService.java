@@ -24,7 +24,6 @@ public class ValidationService {
         StringBuilder builder = new StringBuilder();
 
         for(ConstraintViolation<T> violation: constraintsViolations){
-            //Property: {propertyName} Value: {value} Message: {message}
             builder.append("Property: ");
             builder.append(violation.getPropertyPath());
             builder.append(" Value: ");

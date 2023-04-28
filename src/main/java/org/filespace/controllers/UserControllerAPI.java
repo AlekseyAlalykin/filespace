@@ -8,8 +8,8 @@ import org.filespace.security.SessionManager;
 import org.filespace.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
@@ -29,10 +29,11 @@ public class UserControllerAPI {
     @Autowired
     private SessionManager sessionManager;
 
-    @PostMapping(path = "/users", headers = {"content-type=application/x-www-form-urlencoded"})
-    public ResponseEntity createUser(@RequestParam("username") String username,
-                                     @RequestParam("password") String password,
-                                     @RequestParam("email") String email){
+    @PostMapping(path = "/users", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    public ResponseEntity createUserConsumesURLEncoded(
+            @RequestParam String username,
+            @RequestParam String password,
+            @RequestParam String email){
 
         User user;
 
@@ -49,8 +50,8 @@ public class UserControllerAPI {
                 .body(user);
     }
 
-    @PostMapping(path = "/users", headers = {"content-type=application/json"})
-    public ResponseEntity createUserFromJSON(@RequestBody User user){
+    @PostMapping(path = "/users", consumes = { MediaType.APPLICATION_JSON_VALUE })
+    public ResponseEntity createUser(@RequestBody User user){
 
         try {
             if (user.getUsername() == null)
@@ -111,8 +112,9 @@ public class UserControllerAPI {
     }
 
     @GetMapping(path = "/users")
-    public ResponseEntity getUsers(@RequestParam(name = "q", required = true) String query,
-                                   @RequestParam(name = "n", required = false) Integer limit ){
+    public ResponseEntity getUsers(
+            @RequestParam(name = "q", required = true) String query,
+            @RequestParam(name = "n", required = false) Integer limit ){
         List<UserInfo> list = null;
         try {
             if (limit == null)
@@ -129,11 +131,12 @@ public class UserControllerAPI {
                 .body(list);
     }
 
-    @PatchMapping(path = "/users/{id}", headers = {"content-type=application/x-www-form-urlencoded"})
-    public ResponseEntity updateUser(@PathVariable String id,
-                                     @RequestParam(value = "username",required = false) String username,
-                                     @RequestParam(value = "password",required = false) String password,
-                                     @RequestParam(value = "email",required = false) String email){
+    @PatchMapping(path = "/users/{id}", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    public ResponseEntity updateUserConsumesURLEncoded(
+            @PathVariable String id,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String password,
+            @RequestParam(required = false) String email){
 
         try {
             Long lId = Long.parseLong(id);
@@ -155,8 +158,8 @@ public class UserControllerAPI {
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
     }
 
-    @PatchMapping(path = "/users/{id}", headers = {"content-type=application/json"})
-    public ResponseEntity updateUserFromJSON(@PathVariable String id, @RequestBody User user){
+    @PatchMapping(path = "/users/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE })
+    public ResponseEntity updateUser(@PathVariable String id, @RequestBody User user){
 
         try {
             Long lId = Long.parseLong(id);
@@ -202,28 +205,11 @@ public class UserControllerAPI {
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
     }
 
-    @GetMapping(path = "/user/registration/{token}")
-    public ResponseEntity confirmRegistration(@PathVariable String token){
+    @GetMapping(path = "/user/token/{token}")
+    public ResponseEntity confirmToken(@PathVariable String token){
+        String message;
         try {
-            userService.confirmRegistration(token);
-        } catch (IllegalArgumentException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST,e.getMessage()));
-        }catch (EntityNotFoundException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST,e.getMessage()));
-        } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,e.getMessage()));
-        }
-
-        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"Confirmed"));
-    }
-
-    @GetMapping(path = "/user/deletion/{token}")
-    public ResponseEntity confirmDeletion(@PathVariable String token){
-        try {
-            userService.confirmDeletion(token);
+            message = userService.confirmToken(token);
         } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
@@ -235,25 +221,7 @@ public class UserControllerAPI {
                     .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK, "Deleted"));
-    }
-
-    @GetMapping(path = "/user/email-change/{token}")
-    public ResponseEntity confirmEmailChange(@PathVariable String token){
-        try {
-            userService.confirmEmailChange(token);
-        } catch (IllegalArgumentException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
-        }catch (EntityNotFoundException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
-        } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
-        }
-
-        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK, "Changed"));
+        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK, message));
     }
 
 }

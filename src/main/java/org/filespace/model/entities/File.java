@@ -63,6 +63,7 @@ public class File extends Model {
     @JsonIgnore
     @NotNull
     @Column(name = "md5_hash",
+            length = 32,
             nullable = false)
     private String md5Hash;
 

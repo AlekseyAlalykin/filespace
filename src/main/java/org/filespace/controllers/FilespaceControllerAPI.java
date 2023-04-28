@@ -14,6 +14,7 @@ import org.filespace.security.SecurityUtil;
 import org.filespace.services.FilespaceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import javax.persistence.EntityNotFoundException;
@@ -39,9 +40,9 @@ public class FilespaceControllerAPI {
 
         try {
             if (title == null)
-                filespaces = filespaceService.getUserFilespaces(securityUtil.getCurrentUser());
-            else
-                filespaces = filespaceService.getUserFilespacesByTitle(securityUtil.getCurrentUser(), title);
+                title = "";
+
+            filespaces = filespaceService.getUserFilespacesByTitle(securityUtil.getCurrentUser(), title);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,"Something went wrong, try again later"));
@@ -52,8 +53,8 @@ public class FilespaceControllerAPI {
 
     }
 
-    @PostMapping(headers = {"content-type=application/x-www-form-urlencoded"})
-    public ResponseEntity postFilespace(@RequestParam(value = "title", required = false) String title){
+    @PostMapping(consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    public ResponseEntity postFilespaceConsumesURLEncoded(@RequestParam(value = "title", required = false) String title){
         Filespace filespace;
 
         try {
@@ -71,8 +72,8 @@ public class FilespaceControllerAPI {
                 .body(filespace);
     }
 
-    @PostMapping(headers = {"content-type=application/json"})
-    public ResponseEntity postFilespaceFromJSON(@RequestBody Filespace filespace){
+    @PostMapping(consumes = { MediaType.APPLICATION_JSON_VALUE })
+    public ResponseEntity postFilespace(@RequestBody Filespace filespace){
 
         try {
             if (filespace.getTitle() == null)
@@ -115,9 +116,10 @@ public class FilespaceControllerAPI {
                 .body(filespace);
     }
 
-    @PatchMapping(path = "/{id}", headers = {"content-type=application/x-www-form-urlencoded"})
-    public ResponseEntity updateFilespace(@PathVariable String id,
-                                         @RequestParam(value = "title",required = false) String title){
+    @PatchMapping(path = "/{id}", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    public ResponseEntity updateFilespaceConsumesURLEncoded(
+            @PathVariable String id,
+            @RequestParam(required = false) String title){
         try {
             if (title == null)
                 throw new NullPointerException("No parameter \"title\" specified");
@@ -141,8 +143,8 @@ public class FilespaceControllerAPI {
                 .body(Response.build(HttpStatus.OK,"Filespace info changed"));
     }
 
-    @PatchMapping(path = "/{id}", headers = {"content-type=application/json"})
-    public ResponseEntity updateFilespaceFromJSON(@PathVariable String id, @RequestBody Filespace filespace){
+    @PatchMapping(path = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE })
+    public ResponseEntity updateFilespace(@PathVariable String id, @RequestBody Filespace filespace){
         try {
             if (filespace.getTitle() == null)
                 throw new NullPointerException("No parameter \"title\" specified");
@@ -189,9 +191,10 @@ public class FilespaceControllerAPI {
                 .body(Response.build(HttpStatus.OK, "Filespace deleted"));
     }
 
-    @PostMapping(path = "/{filespaceId}/files", headers = {"content-type=application/x-www-form-urlencoded"})
-    public ResponseEntity attachFileToFilespace(@PathVariable String filespaceId,
-                                                @RequestParam(value = "fileId", required = false) String fileId){
+    @PostMapping(path = "/{filespaceId}/files", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    public ResponseEntity attachFileToFilespaceConsumesURLEncoded(
+            @PathVariable String filespaceId,
+            @RequestParam(required = false) String fileId){
         FileFilespaceRelation relation;
 
         try {
@@ -220,9 +223,10 @@ public class FilespaceControllerAPI {
 
     }
 
-    @PostMapping(path = "/{filespaceId}/files", headers = {"content-type=application/json"})
-    public ResponseEntity attachFileToFilespaceFromJSON(@PathVariable String filespaceId,
-                                                        @RequestBody File file){
+    @PostMapping(path = "/{filespaceId}/files", consumes = { MediaType.APPLICATION_JSON_VALUE })
+    public ResponseEntity attachFileToFilespace(
+            @PathVariable String filespaceId,
+            @RequestBody File file){
         FileFilespaceRelation relation;
 
         try {
@@ -252,8 +256,9 @@ public class FilespaceControllerAPI {
     }
 
     @GetMapping("/{id}/files")
-    public ResponseEntity getFilesFromFilespace(@PathVariable String id,
-                                                @RequestParam(name = "q", required = false) String query){
+    public ResponseEntity getFilesFromFilespace(
+            @PathVariable String id,
+            @RequestParam(name = "q", required = false) String query){
         List<FilespaceFileInfo> list;
 
         try {
@@ -281,8 +286,9 @@ public class FilespaceControllerAPI {
     }
 
     @GetMapping("/{id}/users")
-    public ResponseEntity getUsersOfFilespace(@PathVariable String id,
-                                              @RequestParam(name = "q", required = false) String query){
+    public ResponseEntity getUsersFromFilespace(
+            @PathVariable String id,
+            @RequestParam(name = "q", required = false) String query){
         List<FilespaceUserInfo> list;
 
         try {
@@ -309,15 +315,16 @@ public class FilespaceControllerAPI {
                 .body(list);
     }
 
-    @PostMapping(path = "/{id}/users", headers = {"content-type=application/x-www-form-urlencoded"})
-    public ResponseEntity addUserToFilespace(@PathVariable String id,
-                                             @RequestParam(value = "userId", required = false) String userId,
-                                             @RequestParam(value = "username", required = false) String username,
-                                             @RequestParam(value = "allowDownload", required = false) Boolean allowDownload,
-                                             @RequestParam(value = "allowUpload", required = false) Boolean allowUpload,
-                                             @RequestParam(value = "allowDeletion", required = false) Boolean allowDeletion,
-                                             @RequestParam(value = "allowUserManagement", required = false) Boolean allowUserManagement,
-                                             @RequestParam(value = "allowFilespaceManagement", required = false) Boolean allowFilespaceManagement){
+    @PostMapping(path = "/{id}/users", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    public ResponseEntity addUserToFilespaceConsumesURLEncoded(
+            @PathVariable String id,
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) Boolean allowDownload,
+            @RequestParam(required = false) Boolean allowUpload,
+            @RequestParam(required = false) Boolean allowDeletion,
+            @RequestParam(required = false) Boolean allowUserManagement,
+            @RequestParam(required = false) Boolean allowFilespaceManagement){
 
         UserFilespaceRelation relation = new UserFilespaceRelation();
 
@@ -357,8 +364,8 @@ public class FilespaceControllerAPI {
                 .body(relation);
     }
 
-    @PostMapping(path = "/{id}/users", headers = {"content-type=application/json"})
-    public ResponseEntity addUserToFilespaceFromJSON(@PathVariable String id, @RequestBody UserFilespaceRelation relation){
+    @PostMapping(path = "/{id}/users", consumes = { MediaType.APPLICATION_JSON_VALUE })
+    public ResponseEntity addUserToFilespace(@PathVariable String id, @RequestBody UserFilespaceRelation relation){
         UserFilespaceRelation newRelation;
 
         try {
@@ -396,10 +403,11 @@ public class FilespaceControllerAPI {
                 .body(newRelation);
     }
 
-    @DeleteMapping(path = "/{filespaceId}/users/{userId}", headers = {"content-type=application/x-www-form-urlencoded"})
-    public ResponseEntity deleteUserFromFilespace(@PathVariable String filespaceId,
-                                                  @PathVariable(value = "userId") String userId,
-                                                  @RequestParam(value = "deleteFiles",required = false) String deleteFiles){
+    @DeleteMapping(path = "/{filespaceId}/users/{userId}", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    public ResponseEntity deleteUserFromFilespaceConsumesURLEncoded(
+            @PathVariable String filespaceId,
+            @PathVariable String userId,
+            @RequestParam(required = false) String deleteFiles){
         try {
             Long lFilespaceId = Long.parseLong(filespaceId);
             Long lUserId = Long.parseLong(userId);
@@ -426,9 +434,10 @@ public class FilespaceControllerAPI {
     }
 
     @DeleteMapping(path = "/{filespaceId}/users/{userId}")
-    public ResponseEntity deleteUserFromFilespaceJSON(@PathVariable String filespaceId,
-                                                  @PathVariable(value = "userId") String userId,
-                                                  @RequestBody(required = false) String jsonBody){
+    public ResponseEntity deleteUserFromFilespace(
+            @PathVariable String filespaceId,
+            @PathVariable String userId,
+            @RequestBody(required = false) String jsonBody){
         try {
             Long lFilespaceId = Long.parseLong(filespaceId);
             Long lUserId = Long.parseLong(userId);
@@ -463,8 +472,9 @@ public class FilespaceControllerAPI {
 
 
     @DeleteMapping("/{filespaceId}/files/{fileId}")
-    public ResponseEntity deleteFileFromFilespace(@PathVariable(value = "filespaceId") String filespaceId,
-                                                  @PathVariable(value = "fileId") String fileId){
+    public ResponseEntity deleteFileFromFilespace(
+            @PathVariable String filespaceId,
+            @PathVariable String fileId){
 
         try {
             Long lFilespaceId = Long.parseLong(filespaceId);
@@ -488,14 +498,15 @@ public class FilespaceControllerAPI {
                 .body(Response.build(HttpStatus.OK, "Removed"));
     }
 
-    @PatchMapping(path = "/{filespaceId}/users/{userId}", headers = {"content-type=application/x-www-form-urlencoded"} )
-    public ResponseEntity updateUserPermissions(@PathVariable(value = "filespaceId") String filespaceId,
-                                                @PathVariable(value = "userId") String userId,
-                                                @RequestParam(value = "allowDownload", required = false) Boolean allowDownload,
-                                                @RequestParam(value = "allowUpload", required = false) Boolean allowUpload,
-                                                @RequestParam(value = "allowDeletion", required = false) Boolean allowDeletion,
-                                                @RequestParam(value = "allowUserManagement", required = false) Boolean allowUserManagement,
-                                                @RequestParam(value = "allowFilespaceManagement", required = false) Boolean allowFilespaceManagement){
+    @PatchMapping(path = "/{filespaceId}/users/{userId}", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE } )
+    public ResponseEntity updateUserPermissionsConsumesURLEncoded(
+            @PathVariable String filespaceId,
+            @PathVariable String userId,
+            @RequestParam(required = false) Boolean allowDownload,
+            @RequestParam(required = false) Boolean allowUpload,
+            @RequestParam(required = false) Boolean allowDeletion,
+            @RequestParam(required = false) Boolean allowUserManagement,
+            @RequestParam(required = false) Boolean allowFilespaceManagement){
         UserFilespaceRelation relation = new UserFilespaceRelation();
         try {
             User user = new User();
@@ -530,10 +541,11 @@ public class FilespaceControllerAPI {
                 .body(Response.build(HttpStatus.OK, "Permissions updated"));
     }
 
-    @PatchMapping(path = "/{filespaceId}/users/{userId}", headers = {"content-type=application/json"} )
-    public ResponseEntity updateUserRoleFromJSON(@PathVariable(value = "filespaceId") String filespaceId,
-                                                @PathVariable(value = "userId") String userId,
-                                                @RequestBody UserFilespaceRelation relation){
+    @PatchMapping(path = "/{filespaceId}/users/{userId}", consumes = { MediaType.APPLICATION_JSON_VALUE } )
+    public ResponseEntity updateUserRole(
+            @PathVariable String filespaceId,
+            @PathVariable String userId,
+            @RequestBody UserFilespaceRelation relation){
         try {
 
             User user = new User();

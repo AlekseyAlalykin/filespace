@@ -2,61 +2,29 @@ package org.filespace.services;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.nio.file.*;
-import java.util.Properties;
+
 
 @Service
 public class DiskStorageService {
 
-    private static String propertiesPath = "file-manager.properties";
+    @Value("${storage-directory}")
+    private String storageDirectory;
 
-    private static String storageDirectory;
+    @Value("${temporary-directory}")
+    private String temporaryDirectory;
 
-    private static String temporaryDirectory;
+    @Value("${max-content-length}")
+    private  Long maxContentLength;
 
-    private static Long maxContentLength;
-
-    public static Long getMaxContentLength() {
-        return DiskStorageService.maxContentLength;
-    }
-
-    static {
-        try {
-            InputStream is = new ClassPathResource(propertiesPath).getInputStream();
-                    //iskStorageService.class.getResourceAsStream(propertiesPath);
-            /*
-            FileInputStream is = new FileInputStream(
-                    //ResourceUtils.getFile(propertiesPath)
-            );
-
-            */
-            Properties properties = new Properties();
-            properties.load(is);
-
-            storageDirectory = properties.getProperty("storage-directory");
-            temporaryDirectory = properties.getProperty("temporary-directory");
-            maxContentLength = Long.parseLong(properties.getProperty("max-content-length"));
-
-            is.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-
-            storageDirectory = "C:/FileServiceRootDirectory";
-            temporaryDirectory = "C:/temp";
-            maxContentLength = 1024*1024*10L;
-        }
-
-        try {
-            Files.createDirectories(Paths.get(storageDirectory));
-            Files.createDirectories(Paths.get(temporaryDirectory));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public Long getMaxContentLength() {
+        return this.maxContentLength;
     }
 
     public DiskStorageService(){

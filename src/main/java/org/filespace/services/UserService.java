@@ -48,6 +48,9 @@ public class UserService {
     @Autowired
     private SecurityUtil securityUtil;
 
+    @Autowired
+    private EmailServiceImpl emailService;
+
     @Transactional
     public User registerUser(String username, String password, String email){
         if (password.length() < 8)
@@ -62,13 +65,13 @@ public class UserService {
         //Проверка если кто то зарегистрировал аккаунт но не подтвердил его
         if (userRepository.existsByEmail(email)) {
             User sameEmailUser = userRepository.findUserByEmail(email);
-            if (!deleteIfInactive(sameEmailUser))
+            if (!deleteIfNotConfirmed(sameEmailUser))
                 throw new IllegalArgumentException("Such email has already been taken");
         }
 
         if (userRepository.existsByUsername(username)) {
             User sameUsernameUser = userRepository.findUserByUsername(username);
-            if (!deleteIfInactive(sameUsernameUser))
+            if (!deleteIfNotConfirmed(sameUsernameUser))
                 throw new IllegalArgumentException("Such username has already been taken");
         }
 
@@ -83,37 +86,12 @@ public class UserService {
         verificationTokenRepository.flush();
 
 
-        EmailThread emailThread = new EmailThread(user.getEmail(),EmailHandler.onRegistrationSubject,
-                String.format(EmailHandler.onRegistrationMessage, EmailHandler.domainName, verificationToken.getToken()));
+        EmailThread emailThread = new EmailThread(emailService, user.getEmail(), emailService.getOnRegistrationSubject(),
+                String.format(emailService.getOnRegistrationMessage(), emailService.getDomainName(), verificationToken.getToken()));
 
         emailThread.start();
 
         return user;
-    }
-
-    @Transactional
-    public void confirmRegistration(String tokenValue){
-        VerificationToken verificationToken = verificationTokenRepository.findByToken(tokenValue);
-
-        if (verificationToken == null)
-            throw new EntityNotFoundException("No such token");
-
-        if (verificationToken.isExpired())
-            throw new IllegalArgumentException("Token expired");
-
-        if (verificationToken.isConfirmed())
-            throw new IllegalArgumentException("Token already confirmed");
-
-        if (!verificationToken.getType().equals(TokenType.REGISTRATION))
-            throw new IllegalArgumentException("Wrong token type");
-
-        User user = verificationToken.getUser();
-
-        user.setEnabled(true);
-        verificationToken.setConfirmed(true);
-
-        userRepository.saveAndFlush(user);
-        verificationTokenRepository.saveAndFlush(verificationToken);
     }
 
     public User getUserById(Long id){
@@ -150,31 +128,10 @@ public class UserService {
 
         verificationTokenRepository.saveAndFlush(verificationToken);
 
-        EmailThread emailThread = new EmailThread(target.getEmail(), EmailHandler.onDeletionSubject,
-                String.format(EmailHandler.onDeletionMessage, EmailHandler.domainName, verificationToken.getToken()));
+        EmailThread emailThread = new EmailThread(emailService, target.getEmail(), emailService.getOnDeletionSubject(),
+                String.format(emailService.getOnDeletionMessage(), emailService.getDomainName(), verificationToken.getToken()));
 
         emailThread.start();
-    }
-
-    @Transactional
-    public void confirmDeletion(String tokenValue){
-        VerificationToken verificationToken = verificationTokenRepository.findByToken(tokenValue);
-
-        if (verificationToken == null)
-            throw new EntityNotFoundException("No such token");
-
-        if (verificationToken.isExpired())
-            throw new IllegalArgumentException("Token expired");
-
-        if (verificationToken.isConfirmed())
-            throw new IllegalArgumentException("Token already confirmed");
-
-        if (!verificationToken.getType().equals(TokenType.DELETION))
-            throw new IllegalArgumentException("Wrong token type");
-
-        User target = verificationToken.getUser();
-
-        eraseUser(target);
     }
 
     @Transactional
@@ -196,7 +153,7 @@ public class UserService {
         else {
             if (userRepository.existsByUsername(username)) {
                 User sameUsernameUser = userRepository.findUserByUsername(username);
-                if (!deleteIfInactive(sameUsernameUser))
+                if (!deleteIfNotConfirmed(sameUsernameUser))
                     throw new IllegalArgumentException("Such username has already been taken");
             }
 
@@ -220,7 +177,7 @@ public class UserService {
         else {
             if (userRepository.existsByEmail(email)) {
                 User sameEmailUser = userRepository.findUserByEmail(email);
-                if (!deleteIfInactive(sameEmailUser))
+                if (!deleteIfNotConfirmed(sameEmailUser))
                     throw new IllegalArgumentException("Such email has already been taken");
             }
 
@@ -247,42 +204,13 @@ public class UserService {
         userRepository.flush();
 
         if ( !oldUserState.getEmail().equals(email) )
-            new EmailThread(email, EmailHandler.onEmailChangeSubject,
-                    String.format(EmailHandler.onEmailChangeMessage, EmailHandler.domainName, verificationToken.getToken())
+            new EmailThread(emailService, email, emailService.getOnEmailChangeSubject(),
+                    String.format(emailService.getOnEmailChangeMessage(), emailService.getDomainName(), verificationToken.getToken())
             ).start();
-
-        //Изменение данных пользователя в spring security
-        //sessionManager.updateUsernameForUserSessions(oldUserState, oldUserState.getUsername(), newUserState.getUsername());
-        /*
-        Collection<SimpleGrantedAuthority> authorities =
-                (Collection<SimpleGrantedAuthority>)SecurityContextHolder.getContext()
-                        .getAuthentication().getAuthorities();
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(newUserState.getUsername(), newUserState.getPassword(), authorities);
-
-         */
-
-        /*
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        userDetails.setUsername(newUserState.getUsername());
-
-         */
-
-
-        /*
-        Authentication request = new UsernamePasswordAuthenticationToken(newUserState.getUsername(), newUserState.getPassword());
-        Authentication result = authenticationManager.authenticate(request);
-        SecurityContextHolder.getContext().setAuthentication(result);
-        */
-
-        //if (password != null)
-        //sessionManager.closeAllUserSessions(newUserState);
-        //Инвалидация сессий
-        //sessionManager.closeAllUserSessions(oldUserState);
     }
 
     //Удаляет пользователя если регистрация аккаунта не была подтверждена
-    public boolean deleteIfInactive(User user){
+    public boolean deleteIfNotConfirmed(User user){
         if (user.isEnabled())
             return false;
 
@@ -348,40 +276,61 @@ public class UserService {
         thread.start();
     }
 
-    public void confirmEmailChange(String tokenValue){
+    @Transactional
+    public String confirmToken(String tokenValue){
         VerificationToken verificationToken = verificationTokenRepository.findByToken(tokenValue);
 
         if (verificationToken == null)
             throw new EntityNotFoundException("No such token");
 
-        if (verificationToken.isExpired())
+        if (verificationToken.isExpired()) {
+            verificationToken.setConfirmed(true);
             throw new IllegalArgumentException("Token expired");
+        }
 
         if (verificationToken.isConfirmed())
             throw new IllegalArgumentException("Token already confirmed");
 
-        if (!verificationToken.getType().equals(TokenType.EMAIL_CHANGE))
-            throw new IllegalArgumentException("Wrong token type");
-
+        String message = null;
         User user = verificationToken.getUser();
 
-        if (userRepository.existsByEmail(verificationToken.getValue())) {
-            User sameEmailUser = userRepository.findUserByEmail(verificationToken.getValue());
-            if (!deleteIfInactive(sameEmailUser))
-                throw new IllegalArgumentException("Such email has already been taken");
+        switch (verificationToken.getType()){
+            case REGISTRATION:
+                user.setEnabled(true);
+                verificationToken.setConfirmed(true);
+                message = "Registration confirmed";
+                break;
+            case DELETION:
+                eraseUser(user);
+                message = "Deletion confirmed";
+                break;
+            case EMAIL_CHANGE:
+                if (userRepository.existsByEmail(verificationToken.getValue())) {
+                    User sameEmailUser = userRepository.findUserByEmail(verificationToken.getValue());
+                    if (!deleteIfNotConfirmed(sameEmailUser)){
+                        verificationToken.setConfirmed(true);
+                        throw new IllegalArgumentException("Such email has already been taken");
+                    }
+                }
+
+                if (!validationService.validate(user)){
+                    verificationToken.setConfirmed(true);
+                    throw new IllegalArgumentException(validationService.getConstrainsViolations(user));
+                }
+
+                user.setEmail(verificationToken.getValue());
+                verificationToken.setConfirmed(true);
+
+                message = "Email change confirmed";
         }
-
-        if (!validationService.validate(user))
-            throw new IllegalArgumentException(validationService.getConstrainsViolations(user));
-
-        user.setEmail(verificationToken.getValue());
-        verificationToken.setConfirmed(true);
 
         userRepository.saveAndFlush(user);
         verificationTokenRepository.saveAndFlush(verificationToken);
 
         //Инвалидирую сессии
         sessionManager.closeAllUserSessions(user);
+
+        return message;
     }
 
 }

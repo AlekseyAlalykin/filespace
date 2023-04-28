@@ -4,7 +4,6 @@ import org.filespace.model.entities.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.stereotype.Service;
 
 
@@ -18,7 +17,6 @@ public class SessionManager {
         for (SessionInformation sessionInformation:
                 sessionRegistry.getAllSessions(UserDetailsServiceImpl.fromUser(user), false)){
             sessionInformation.expireNow();
-            //sessionRegistry.removeSessionInformation(sessionInformation.getSessionId());
         }
     }
 }
