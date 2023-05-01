@@ -410,12 +410,12 @@ public class FilespaceControllerAPI {
             @RequestParam(required = false) String deleteFiles){
         try {
             Long lFilespaceId = Long.parseLong(filespaceId);
-            Long lUserId = Long.parseLong(userId);
+
+            Long lUserId = securityUtil.getUserId(userId);
+
             Boolean bDeleteFiles = Boolean.valueOf(deleteFiles);
 
-            System.out.println(bDeleteFiles);
-
-            filespaceService.detachUserFromFilespace(securityUtil.getCurrentUser(), lFilespaceId,lUserId, bDeleteFiles);
+            filespaceService.detachUserFromFilespace(securityUtil.getCurrentUser(), lFilespaceId, lUserId, bDeleteFiles);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
@@ -440,7 +440,8 @@ public class FilespaceControllerAPI {
             @RequestBody(required = false) String jsonBody){
         try {
             Long lFilespaceId = Long.parseLong(filespaceId);
-            Long lUserId = Long.parseLong(userId);
+
+            Long lUserId = securityUtil.getUserId(userId);
 
             Boolean bDeleteFiles;
 
@@ -509,8 +510,10 @@ public class FilespaceControllerAPI {
             @RequestParam(required = false) Boolean allowFilespaceManagement){
         UserFilespaceRelation relation = new UserFilespaceRelation();
         try {
+            Long lUserId = securityUtil.getUserId(userId);
+
             User user = new User();
-            user.setId(Long.parseLong(userId));
+            user.setId(lUserId);
 
             Filespace filespace = new Filespace();
             filespace.setId(Long.parseLong(filespaceId));
@@ -542,14 +545,15 @@ public class FilespaceControllerAPI {
     }
 
     @PatchMapping(path = "/{filespaceId}/users/{userId}", consumes = { MediaType.APPLICATION_JSON_VALUE } )
-    public ResponseEntity updateUserRole(
+    public ResponseEntity updateUserPermissions(
             @PathVariable String filespaceId,
             @PathVariable String userId,
             @RequestBody UserFilespaceRelation relation){
         try {
+            Long lUserId = securityUtil.getUserId(userId);
 
             User user = new User();
-            user.setId(Long.parseLong(userId));
+            user.setId(lUserId);
             Filespace filespace = new Filespace();
             filespace.setId(Long.parseLong(filespaceId));
 

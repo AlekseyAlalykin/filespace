@@ -1,12 +1,12 @@
 package org.filespace.model.entities;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
-import org.filespace.model.EntityImplementation;
 
 import javax.persistence.*;
+import java.io.Serializable;
 
 @MappedSuperclass
-public class Model implements EntityImplementation {
+public class Model implements Serializable {
 
     @Id
     @JsonAlias({"fileId", "userId", "filespaceId"})

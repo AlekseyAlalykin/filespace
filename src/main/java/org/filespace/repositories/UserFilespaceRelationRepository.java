@@ -1,8 +1,9 @@
 package org.filespace.repositories;
 
+
+import org.filespace.model.compoundrelations.UserFilespaceKey;
 import org.filespace.model.entities.User;
 import org.filespace.model.intermediate.FilespacePermissions;
-import org.filespace.model.compoundrelations.UserFilespaceKey;
 import org.filespace.model.compoundrelations.UserFilespaceRelation;
 import org.filespace.model.entities.Filespace;
 import org.filespace.model.intermediate.FilespaceUserInfo;

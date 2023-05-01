@@ -20,5 +20,17 @@ public class SecurityUtil {
         return userRepository.findUserByUsername(getCurrentUserUsername());
     }
 
+    public Long getCurrentUserId(){
+        return getCurrentUser().getId();
+    }
 
+    public Long getUserId(String userId){
+        Long id;
+        if (userId.equals("current"))
+            id = getCurrentUserId();
+        else
+            id= Long.parseLong(userId);
+
+        return id;
+    }
 }

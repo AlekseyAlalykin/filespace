@@ -1,7 +1,8 @@
 package org.filespace.repositories;
 
-import org.filespace.model.intermediate.FilespaceFileInfo;
+
 import org.filespace.model.compoundrelations.FileFilespaceKey;
+import org.filespace.model.intermediate.FilespaceFileInfo;
 import org.filespace.model.compoundrelations.FileFilespaceRelation;
 import org.filespace.model.entities.File;
 import org.filespace.model.entities.Filespace;

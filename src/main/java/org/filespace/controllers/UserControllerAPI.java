@@ -17,7 +17,7 @@ import java.util.List;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/users")
 public class UserControllerAPI {
 
     @Autowired
@@ -29,7 +29,7 @@ public class UserControllerAPI {
     @Autowired
     private SessionManager sessionManager;
 
-    @PostMapping(path = "/users", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    @PostMapping(consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
     public ResponseEntity createUserConsumesURLEncoded(
             @RequestParam String username,
             @RequestParam String password,
@@ -50,7 +50,7 @@ public class UserControllerAPI {
                 .body(user);
     }
 
-    @PostMapping(path = "/users", consumes = { MediaType.APPLICATION_JSON_VALUE })
+    @PostMapping(consumes = { MediaType.APPLICATION_JSON_VALUE })
     public ResponseEntity createUser(@RequestBody User user){
 
         try {
@@ -73,33 +73,19 @@ public class UserControllerAPI {
                 .body(user);
     }
 
-    @GetMapping(path = "/user/logout")
+    @GetMapping(path = "/current/logout")
     public ResponseEntity logout(){
         sessionManager.closeAllUserSessions(securityUtil.getCurrentUser());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(Response.build(HttpStatus.OK, HttpStatus.OK.getReasonPhrase()));
     }
 
-    @GetMapping(path = "/user")
-    public ResponseEntity getCurrentUser(){
-        User user;
-        try {
-            user = userService.getCurrentUser();
-        } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
-        }
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(user);
-    }
-
-    @GetMapping(path = "/users/{id}")
+    @GetMapping(path = "/{id}")
     public ResponseEntity getUser(@PathVariable String id){
         User user;
 
         try {
-            Long lId = Long.parseLong(id);
+            Long lId = securityUtil.getUserId(id);
 
             user = userService.getUserById(lId);
         } catch (Exception e){
@@ -111,7 +97,7 @@ public class UserControllerAPI {
                 .body(user);
     }
 
-    @GetMapping(path = "/users")
+    @GetMapping
     public ResponseEntity getUsers(
             @RequestParam(name = "q", required = true) String query,
             @RequestParam(name = "n", required = false) Integer limit ){
@@ -131,7 +117,7 @@ public class UserControllerAPI {
                 .body(list);
     }
 
-    @PatchMapping(path = "/users/{id}", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    @PatchMapping(path = "/{id}", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
     public ResponseEntity updateUserConsumesURLEncoded(
             @PathVariable String id,
             @RequestParam(required = false) String username,
@@ -139,7 +125,7 @@ public class UserControllerAPI {
             @RequestParam(required = false) String email){
 
         try {
-            Long lId = Long.parseLong(id);
+            Long lId = securityUtil.getUserId(id);
 
             userService.updateUser(securityUtil.getCurrentUser(), lId, username, password, email);
         } catch (EntityNotFoundException e) {
@@ -158,11 +144,11 @@ public class UserControllerAPI {
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
     }
 
-    @PatchMapping(path = "/users/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE })
+    @PatchMapping(path = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE })
     public ResponseEntity updateUser(@PathVariable String id, @RequestBody User user){
 
         try {
-            Long lId = Long.parseLong(id);
+            Long lId = securityUtil.getUserId(id);
 
             userService.updateUser(securityUtil.getCurrentUser(), lId, user.getUsername(), user.getPassword(), user.getEmail());
         } catch (EntityNotFoundException e) {
@@ -182,11 +168,11 @@ public class UserControllerAPI {
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
     }
 
-    @DeleteMapping(path = "/users/{id}")
+    @DeleteMapping(path = "/{id}")
     public ResponseEntity deleteUser(@PathVariable String id){
 
         try {
-            Long lId = Long.parseLong(id);
+            Long lId = securityUtil.getUserId(id);
 
             userService.deleteUser(securityUtil.getCurrentUser(), lId);
         } catch (EntityNotFoundException e) {
@@ -205,7 +191,7 @@ public class UserControllerAPI {
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
     }
 
-    @GetMapping(path = "/user/token/{token}")
+    @GetMapping(path = "/token/{token}")
     public ResponseEntity confirmToken(@PathVariable String token){
         String message;
         try {

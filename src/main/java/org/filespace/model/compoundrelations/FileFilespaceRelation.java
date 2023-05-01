@@ -3,19 +3,19 @@ package org.filespace.model.compoundrelations;
 import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.filespace.model.EntityImplementation;
 import org.filespace.model.entities.File;
 import org.filespace.model.entities.Filespace;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
 @Table(name = "files_filespaces")
-public class FileFilespaceRelation implements EntityImplementation {
+public class FileFilespaceRelation implements Serializable {
     @JsonIgnore
     @NotNull
     @EmbeddedId
