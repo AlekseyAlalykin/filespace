@@ -16,11 +16,12 @@ public class UserFilespaceRelation implements Serializable {
     @JsonIgnore
     @NotNull
     @EmbeddedId
-    private UserFilespaceKey key = new UserFilespaceKey();
+    //private UserFilespaceKey key = new UserFilespaceKey();
+    private CompoundKey key = new CompoundKey();
 
     //@JsonIgnore
     @NotNull
-    @MapsId("userId")
+    @MapsId("genericId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
@@ -63,11 +64,11 @@ public class UserFilespaceRelation implements Serializable {
     public UserFilespaceRelation() {
     }
 
-    public UserFilespaceKey getKey() {
+    public CompoundKey getKey() {
         return key;
     }
 
-    public void setKey(UserFilespaceKey key) {
+    public void setKey(CompoundKey key) {
         this.key = key;
     }
 

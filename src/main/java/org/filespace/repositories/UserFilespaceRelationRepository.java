@@ -1,7 +1,7 @@
 package org.filespace.repositories;
 
 
-import org.filespace.model.compoundrelations.UserFilespaceKey;
+import org.filespace.model.compoundrelations.CompoundKey;
 import org.filespace.model.entities.User;
 import org.filespace.model.intermediate.FilespacePermissions;
 import org.filespace.model.compoundrelations.UserFilespaceRelation;
@@ -13,7 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 import java.util.Optional;
 
-public interface UserFilespaceRelationRepository extends JpaRepository<UserFilespaceRelation, UserFilespaceKey> {
+public interface UserFilespaceRelationRepository extends JpaRepository<UserFilespaceRelation, CompoundKey> {
     public List<UserFilespaceRelation> getByUser(User user);
 
     @Query(value =

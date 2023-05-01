@@ -1,7 +1,7 @@
 package org.filespace.repositories;
 
 
-import org.filespace.model.compoundrelations.FileFilespaceKey;
+import org.filespace.model.compoundrelations.CompoundKey;
 import org.filespace.model.intermediate.FilespaceFileInfo;
 import org.filespace.model.compoundrelations.FileFilespaceRelation;
 import org.filespace.model.entities.File;
@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
-public interface FileFilespaceRelationRepository extends JpaRepository<FileFilespaceRelation, FileFilespaceKey> {
+public interface FileFilespaceRelationRepository extends JpaRepository<FileFilespaceRelation, CompoundKey> {
     public void deleteByFile(File file);
 
     public void deleteByFilespace(Filespace filespace);

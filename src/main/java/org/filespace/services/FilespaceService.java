@@ -100,7 +100,7 @@ public class FilespaceService {
         Filespace filespace = optionalFilespace.get();
 
         Optional<UserFilespaceRelation> optionalRelation = userFilespaceRelationRepository
-                .findById(new UserFilespaceKey(user.getId(),id));
+                .findById(new CompoundKey(user.getId(),id));
 
         if (optionalRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
@@ -131,7 +131,7 @@ public class FilespaceService {
         Filespace filespace = optionalFilespace.get();
 
         Optional<UserFilespaceRelation> optionalRelation = userFilespaceRelationRepository
-                .findById(new UserFilespaceKey(user.getId(),id));
+                .findById(new CompoundKey(user.getId(),id));
 
         if (optionalRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
@@ -172,7 +172,7 @@ public class FilespaceService {
             throw new IllegalAccessException("No access to file");
 
         Optional<UserFilespaceRelation> optionalRelation = userFilespaceRelationRepository
-                .findById(new UserFilespaceKey(user.getId(),filespaceId));
+                .findById(new CompoundKey(user.getId(),filespaceId));
 
         if (optionalRelation.isEmpty())
             throw new IllegalAccessException("No access to filespace");
@@ -202,7 +202,7 @@ public class FilespaceService {
             throw new EntityNotFoundException("No such filespace");
 
         if (!userFilespaceRelationRepository.existsById(
-                new UserFilespaceKey(user.getId(),id)))
+                new CompoundKey(user.getId(),id)))
             throw new IllegalAccessException("No access to filespace");
 
         return fileFilespaceRelationRepository.getFilesFromFilespace(id, query);
@@ -215,7 +215,7 @@ public class FilespaceService {
             throw new EntityNotFoundException("No such filespace");
 
         if (!userFilespaceRelationRepository.existsById(
-                new UserFilespaceKey(user.getId(),id)))
+                new CompoundKey(user.getId(),id)))
             throw new IllegalAccessException("No access to filespace");
 
         return userFilespaceRelationRepository.getFilespaceUsersByIdAndUsername(id, username);
@@ -242,7 +242,7 @@ public class FilespaceService {
         User targetedUser = optionalUser.get();
 
         Optional<UserFilespaceRelation> optionalRequesterRelation = userFilespaceRelationRepository.findById(
-                new UserFilespaceKey(requester.getId(),filespaceId));
+                new CompoundKey(requester.getId(),filespaceId));
 
         if (optionalRequesterRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
@@ -265,7 +265,7 @@ public class FilespaceService {
             throw new IllegalArgumentException("Can't give filespace management permission since you don't have one");
 
         Optional<UserFilespaceRelation> optionalTargetRelation = userFilespaceRelationRepository.findById(
-                new UserFilespaceKey(targetedUser.getId(),filespaceId));
+                new CompoundKey(targetedUser.getId(),filespaceId));
         if (optionalTargetRelation.isPresent())
             throw new IllegalArgumentException("User already attached to filespace");
 
@@ -299,7 +299,7 @@ public class FilespaceService {
         User targetedUser = optionalUser.get();
 
         Optional<UserFilespaceRelation> optionalRequesterFilespaceRelation =
-                userFilespaceRelationRepository.findById(new UserFilespaceKey(requester.getId(), filespaceId));
+                userFilespaceRelationRepository.findById(new CompoundKey(requester.getId(), filespaceId));
 
         if (optionalRequesterFilespaceRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
@@ -308,7 +308,7 @@ public class FilespaceService {
             throw new IllegalAccessException("No permission to remove user");
 
         Optional<UserFilespaceRelation> optionalTargetedUserRelation =
-                userFilespaceRelationRepository.findById(new UserFilespaceKey(userId, filespaceId));
+                userFilespaceRelationRepository.findById(new CompoundKey(userId, filespaceId));
 
         if (optionalTargetedUserRelation.isEmpty())
             throw new IllegalArgumentException("User isn't in filespace");
@@ -345,7 +345,7 @@ public class FilespaceService {
         File file = optionalFile.get();
 
         Optional<UserFilespaceRelation> optionalRequesterFilespaceRelation =
-                userFilespaceRelationRepository.findById(new UserFilespaceKey(requester.getId(), filespaceId));
+                userFilespaceRelationRepository.findById(new CompoundKey(requester.getId(), filespaceId));
 
         if (optionalRequesterFilespaceRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
@@ -353,7 +353,7 @@ public class FilespaceService {
         UserFilespaceRelation requesterRelation = optionalRequesterFilespaceRelation.get();
 
         Optional<FileFilespaceRelation> optionalFileFilespaceRelation =
-                fileFilespaceRelationRepository.findById(new FileFilespaceKey(fileId,filespaceId));
+                fileFilespaceRelationRepository.findById(new CompoundKey(fileId,filespaceId));
 
         if (optionalFileFilespaceRelation.isEmpty())
             throw new IllegalArgumentException("No such file in filespace");
@@ -380,7 +380,7 @@ public class FilespaceService {
         User target = optionalUser.get();
 
         Optional<UserFilespaceRelation> optionalRequesterFilespaceRelation =
-                userFilespaceRelationRepository.findById(new UserFilespaceKey(requester.getId(), relation.getFilespace().getId()));
+                userFilespaceRelationRepository.findById(new CompoundKey(requester.getId(), relation.getFilespace().getId()));
 
         if (optionalRequesterFilespaceRelation.isEmpty())
             throw new IllegalAccessException("No authority over filespace");
@@ -394,7 +394,7 @@ public class FilespaceService {
             throw new IllegalAccessException("No authority over filespace");
 
         Optional<UserFilespaceRelation> optionalTargetedUserRelation =
-                userFilespaceRelationRepository.findById(new UserFilespaceKey(relation.getUser().getId(), relation.getFilespace().getId()));
+                userFilespaceRelationRepository.findById(new CompoundKey(relation.getUser().getId(), relation.getFilespace().getId()));
 
         if (optionalTargetedUserRelation.isEmpty())
             throw new IllegalArgumentException("User isn't in filespace");

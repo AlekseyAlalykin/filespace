@@ -19,10 +19,11 @@ public class FileFilespaceRelation implements Serializable {
     @JsonIgnore
     @NotNull
     @EmbeddedId
-    private FileFilespaceKey key = new FileFilespaceKey();
+    //private FileFilespaceKey key = new FileFilespaceKey();
+    private CompoundKey key = new CompoundKey();
 
     //@JsonIgnore
-    @MapsId("fileId")
+    @MapsId("genericId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "file_id")
     private File file;
@@ -43,7 +44,7 @@ public class FileFilespaceRelation implements Serializable {
             nullable = false)
     private LocalTime attachTime;
 
-    public FileFilespaceRelation(@NotNull FileFilespaceKey key, @NotNull LocalDate attachDate, @NotNull LocalTime attachTime) {
+    public FileFilespaceRelation(@NotNull CompoundKey key, @NotNull LocalDate attachDate, @NotNull LocalTime attachTime) {
         this.key = key;
         this.attachDate = attachDate;
         this.attachTime = attachTime;
@@ -52,11 +53,11 @@ public class FileFilespaceRelation implements Serializable {
     public FileFilespaceRelation() {
     }
 
-    public FileFilespaceKey getKey() {
+    public CompoundKey getKey() {
         return key;
     }
 
-    public void setKey(FileFilespaceKey fileFilespaceKey) {
+    public void setKey(CompoundKey fileFilespaceKey) {
         this.key = fileFilespaceKey;
     }
 
