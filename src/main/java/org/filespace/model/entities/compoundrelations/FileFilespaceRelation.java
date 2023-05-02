@@ -15,13 +15,7 @@ import java.time.LocalTime;
 
 @Entity
 @Table(name = "files_filespaces")
-public class FileFilespaceRelation implements Serializable {
-    @JsonIgnore
-    @NotNull
-    @EmbeddedId
-    //private FileFilespaceKey key = new FileFilespaceKey();
-    private CompoundKey key = new CompoundKey();
-
+public class FileFilespaceRelation extends CompoundModel {
     //@JsonIgnore
     @MapsId("genericId")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -45,7 +39,7 @@ public class FileFilespaceRelation implements Serializable {
     private LocalTime attachTime;
 
     public FileFilespaceRelation(@NotNull CompoundKey key, @NotNull LocalDate attachDate, @NotNull LocalTime attachTime) {
-        this.key = key;
+        super(key);
         this.attachDate = attachDate;
         this.attachTime = attachTime;
     }
@@ -55,14 +49,6 @@ public class FileFilespaceRelation implements Serializable {
 
     public CompoundKey getKey() {
         return key;
-    }
-
-    public void setKey(CompoundKey fileFilespaceKey) {
-        this.key = fileFilespaceKey;
-    }
-
-    public File getFile() {
-        return file;
     }
 
     public void setFile(File file) {

@@ -12,14 +12,7 @@ import java.time.LocalTime;
 
 @Entity
 @Table(name = "users_filespaces")
-public class UserFilespaceRelation implements Serializable {
-    @JsonIgnore
-    @NotNull
-    @EmbeddedId
-    //private UserFilespaceKey key = new UserFilespaceKey();
-    private CompoundKey key = new CompoundKey();
-
-    //@JsonIgnore
+public class UserFilespaceRelation extends CompoundModel {
     @NotNull
     @MapsId("genericId")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -62,14 +55,6 @@ public class UserFilespaceRelation implements Serializable {
     private LocalTime joinTime;
 
     public UserFilespaceRelation() {
-    }
-
-    public CompoundKey getKey() {
-        return key;
-    }
-
-    public void setKey(CompoundKey key) {
-        this.key = key;
     }
 
     public User getUser() {
