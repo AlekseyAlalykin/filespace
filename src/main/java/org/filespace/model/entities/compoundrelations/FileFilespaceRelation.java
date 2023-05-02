@@ -1,10 +1,10 @@
-package org.filespace.model.compoundrelations;
+package org.filespace.model.entities.compoundrelations;
 
 import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.filespace.model.entities.File;
-import org.filespace.model.entities.Filespace;
+import org.filespace.model.entities.simplerelations.File;
+import org.filespace.model.entities.simplerelations.Filespace;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;

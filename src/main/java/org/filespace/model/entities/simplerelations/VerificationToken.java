@@ -1,6 +1,6 @@
-package org.filespace.model.entities;
+package org.filespace.model.entities.simplerelations;
 
-import org.hibernate.validator.constraints.Length;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -11,7 +11,8 @@ import java.time.LocalTime;
 @Entity
 @Table(name = "verification_tokens")
 public class VerificationToken extends Model{
-    private static final int EXPIRATION = 60 * 24;
+    @Value("${token-expiration}")
+    private Integer EXPIRATION;
 
     @NotNull
     @Column(name = "token",
@@ -98,7 +99,7 @@ public class VerificationToken extends Model{
         this.user = user;
     }
 
-    public static int getEXPIRATION() {
+    public Integer getEXPIRATION() {
         return EXPIRATION;
     }
 

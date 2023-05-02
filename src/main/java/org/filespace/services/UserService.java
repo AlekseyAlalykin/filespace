@@ -1,7 +1,7 @@
 package org.filespace.services;
 
-import org.filespace.model.compoundrelations.UserFilespaceRelation;
-import org.filespace.model.entities.*;
+import org.filespace.model.entities.compoundrelations.UserFilespaceRelation;
+import org.filespace.model.entities.simplerelations.*;
 import org.filespace.model.intermediate.UserInfo;
 import org.filespace.repositories.*;
 import org.filespace.security.SecurityUtil;
@@ -94,16 +94,19 @@ public class UserService {
         return user;
     }
 
-    public User getUserById(Long id){
-        Optional<User> optional = userRepository.findById(id);
-        if (optional.isEmpty())
-            throw new EntityNotFoundException("No such user found");
+    public Object getUserById(Long id){
+        Optional<?> optional;
 
-        return optional.get();
-    }
+        if (id.equals(securityUtil.getCurrentUserId()))
+            return securityUtil.getCurrentUser();
+        else {
+            optional = userRepository.findUserById(id);
 
-    public User getCurrentUser(){
-        return securityUtil.getCurrentUser();
+            if (optional.isEmpty())
+                throw new EntityNotFoundException("No such user found");
+
+            return optional.get();
+        }
     }
 
     public List<UserInfo> getUsersList(String username, Integer limit){

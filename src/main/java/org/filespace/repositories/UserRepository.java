@@ -1,6 +1,6 @@
 package org.filespace.repositories;
 
-import org.filespace.model.entities.User;
+import org.filespace.model.entities.simplerelations.User;
 import org.filespace.model.intermediate.UserInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +11,8 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+
+    public Optional<UserInfo> findUserById(Long id);
 
     public User findUserByUsername(String username);
 

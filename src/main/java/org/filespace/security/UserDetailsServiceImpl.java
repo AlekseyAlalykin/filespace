@@ -1,6 +1,6 @@
 package org.filespace.security;
 
-import org.filespace.model.entities.User;
+import org.filespace.model.entities.simplerelations.User;
 import org.filespace.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;

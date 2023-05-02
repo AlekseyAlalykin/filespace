@@ -1,8 +1,8 @@
 package org.filespace.repositories;
 
-import org.filespace.model.entities.TokenType;
-import org.filespace.model.entities.User;
-import org.filespace.model.entities.VerificationToken;
+import org.filespace.model.entities.simplerelations.TokenType;
+import org.filespace.model.entities.simplerelations.User;
+import org.filespace.model.entities.simplerelations.VerificationToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

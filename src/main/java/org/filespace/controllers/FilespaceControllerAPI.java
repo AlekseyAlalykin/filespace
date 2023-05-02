@@ -2,13 +2,13 @@ package org.filespace.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.filespace.config.Response;
-import org.filespace.model.compoundrelations.FileFilespaceRelation;
-import org.filespace.model.entities.File;
-import org.filespace.model.compoundrelations.UserFilespaceRelation;
-import org.filespace.model.entities.User;
+import org.filespace.model.entities.compoundrelations.FileFilespaceRelation;
+import org.filespace.model.entities.simplerelations.File;
+import org.filespace.model.entities.compoundrelations.UserFilespaceRelation;
+import org.filespace.model.entities.simplerelations.User;
 import org.filespace.model.intermediate.FilespaceFileInfo;
 import org.filespace.model.intermediate.FilespacePermissions;
-import org.filespace.model.entities.Filespace;
+import org.filespace.model.entities.simplerelations.Filespace;
 import org.filespace.model.intermediate.FilespaceUserInfo;
 import org.filespace.security.SecurityUtil;
 import org.filespace.services.FilespaceService;

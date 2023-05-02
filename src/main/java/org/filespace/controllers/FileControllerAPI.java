@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.filespace.config.Response;
-import org.filespace.model.entities.File;
+import org.filespace.model.entities.simplerelations.File;
 import org.filespace.security.SecurityUtil;
 import org.filespace.services.DiskStorageService;
 import org.filespace.services.FileService;

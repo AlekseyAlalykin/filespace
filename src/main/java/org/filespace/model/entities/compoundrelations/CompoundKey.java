@@ -1,6 +1,5 @@
-package org.filespace.model.compoundrelations;
+package org.filespace.model.entities.compoundrelations;
 
-import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import java.io.Serializable;
 import java.util.Objects;

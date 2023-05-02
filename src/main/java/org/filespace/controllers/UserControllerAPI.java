@@ -1,7 +1,7 @@
 package org.filespace.controllers;
 
 import org.filespace.config.Response;
-import org.filespace.model.entities.User;
+import org.filespace.model.entities.simplerelations.User;
 import org.filespace.model.intermediate.UserInfo;
 import org.filespace.security.SecurityUtil;
 import org.filespace.security.SessionManager;
@@ -82,7 +82,7 @@ public class UserControllerAPI {
 
     @GetMapping(path = "/{id}")
     public ResponseEntity getUser(@PathVariable String id){
-        User user;
+        Object user;
 
         try {
             Long lId = securityUtil.getUserId(id);

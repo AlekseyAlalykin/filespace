@@ -1,7 +1,7 @@
 package org.filespace.repositories;
 
-import org.filespace.model.entities.File;
-import org.filespace.model.entities.User;
+import org.filespace.model.entities.simplerelations.File;
+import org.filespace.model.entities.simplerelations.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

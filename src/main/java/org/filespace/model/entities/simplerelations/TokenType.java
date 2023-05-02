@@ -1,4 +1,4 @@
-package org.filespace.model.entities;
+package org.filespace.model.entities.simplerelations;
 
 public enum TokenType {
     REGISTRATION,

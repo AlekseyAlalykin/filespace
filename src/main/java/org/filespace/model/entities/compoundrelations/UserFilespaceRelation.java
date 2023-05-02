@@ -1,8 +1,8 @@
-package org.filespace.model.compoundrelations;
+package org.filespace.model.entities.compoundrelations;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.filespace.model.entities.Filespace;
-import org.filespace.model.entities.User;
+import org.filespace.model.entities.simplerelations.Filespace;
+import org.filespace.model.entities.simplerelations.User;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;

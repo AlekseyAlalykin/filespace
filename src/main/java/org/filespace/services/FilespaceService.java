@@ -1,10 +1,10 @@
 package org.filespace.services;
 
 
-import org.filespace.model.compoundrelations.*;
-import org.filespace.model.entities.File;
-import org.filespace.model.entities.Filespace;
-import org.filespace.model.entities.User;
+import org.filespace.model.entities.compoundrelations.*;
+import org.filespace.model.entities.simplerelations.File;
+import org.filespace.model.entities.simplerelations.Filespace;
+import org.filespace.model.entities.simplerelations.User;
 import org.filespace.model.intermediate.FilespaceFileInfo;
 import org.filespace.model.intermediate.FilespacePermissions;
 import org.filespace.model.intermediate.FilespaceUserInfo;

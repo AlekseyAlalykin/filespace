@@ -1,11 +1,11 @@
 package org.filespace.repositories;
 
 
-import org.filespace.model.compoundrelations.CompoundKey;
+import org.filespace.model.entities.compoundrelations.CompoundKey;
 import org.filespace.model.intermediate.FilespaceFileInfo;
-import org.filespace.model.compoundrelations.FileFilespaceRelation;
-import org.filespace.model.entities.File;
-import org.filespace.model.entities.Filespace;
+import org.filespace.model.entities.compoundrelations.FileFilespaceRelation;
+import org.filespace.model.entities.simplerelations.File;
+import org.filespace.model.entities.simplerelations.Filespace;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
