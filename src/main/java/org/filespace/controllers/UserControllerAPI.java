@@ -40,11 +40,13 @@ public class UserControllerAPI {
         try {
             user = userService.registerUser(username, password, email);
 
-        } catch (Exception e){
+        } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        } catch (IllegalStateException e){
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Response.build(HttpStatus.CONFLICT, e.getMessage()));
         }
-
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(user);
@@ -55,17 +57,20 @@ public class UserControllerAPI {
 
         try {
             if (user.getUsername() == null)
-                throw new Exception("No username specified");
+                throw new IllegalArgumentException("No username specified");
             if (user.getEmail() == null)
-                throw new Exception("No email specified");
+                throw new IllegalArgumentException("No email specified");
             if (user.getPassword() == null)
-                throw new Exception("No password specified");
+                throw new IllegalArgumentException("No password specified");
 
             user = userService.registerUser(user.getUsername(), user.getPassword(), user.getEmail());
 
-        } catch (Exception e){
+        } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        } catch (IllegalStateException e){
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Response.build(HttpStatus.CONFLICT, e.getMessage()));
         }
 
 
@@ -136,9 +141,12 @@ public class UserControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Response.build(HttpStatus.CONFLICT, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
@@ -159,10 +167,12 @@ public class UserControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Response.build(HttpStatus.CONFLICT, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
@@ -183,9 +193,6 @@ public class UserControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
@@ -200,11 +207,11 @@ public class UserControllerAPI {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }catch (EntityNotFoundException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
-        } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
+        } catch (IllegalStateException e){
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Response.build(HttpStatus.CONFLICT, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK, message));

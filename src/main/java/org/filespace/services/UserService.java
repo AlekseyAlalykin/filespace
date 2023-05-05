@@ -66,13 +66,13 @@ public class UserService {
         if (userRepository.existsByEmail(email)) {
             User sameEmailUser = userRepository.findUserByEmail(email);
             if (!deleteIfNotConfirmed(sameEmailUser))
-                throw new IllegalArgumentException("Such email has already been taken");
+                throw new IllegalStateException("Such email has already been taken");
         }
 
         if (userRepository.existsByUsername(username)) {
             User sameUsernameUser = userRepository.findUserByUsername(username);
             if (!deleteIfNotConfirmed(sameUsernameUser))
-                throw new IllegalArgumentException("Such username has already been taken");
+                throw new IllegalStateException("Such username has already been taken");
         }
 
         userRepository.save(user);
@@ -114,7 +114,7 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteUser(User requester, Long userId) throws Exception{
+    public void deleteUser(User requester, Long userId) throws IllegalAccessException{
         //Проверка пользователя
         Optional<User> optionalUser = userRepository.findById(userId);
 
@@ -138,7 +138,7 @@ public class UserService {
     }
 
     @Transactional
-    public void updateUser(User requester, Long userId, String username, String password, String email) throws Exception{
+    public void updateUser(User requester, Long userId, String username, String password, String email) throws IllegalAccessException{
         Optional<User> optionalUser = userRepository.findById(userId);
 
         if (optionalUser.isEmpty())
@@ -157,7 +157,7 @@ public class UserService {
             if (userRepository.existsByUsername(username)) {
                 User sameUsernameUser = userRepository.findUserByUsername(username);
                 if (!deleteIfNotConfirmed(sameUsernameUser))
-                    throw new IllegalArgumentException("Such username has already been taken");
+                    throw new IllegalStateException("Such username has already been taken");
             }
 
             newUserState.setUsername(username);
@@ -181,7 +181,7 @@ public class UserService {
             if (userRepository.existsByEmail(email)) {
                 User sameEmailUser = userRepository.findUserByEmail(email);
                 if (!deleteIfNotConfirmed(sameEmailUser))
-                    throw new IllegalArgumentException("Such email has already been taken");
+                    throw new IllegalStateException("Such email has already been taken");
             }
 
             verificationToken = new VerificationToken(UUID.randomUUID().toString(),

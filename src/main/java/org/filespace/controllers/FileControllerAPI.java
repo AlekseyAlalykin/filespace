@@ -42,9 +42,9 @@ public class FileControllerAPI {
 
         try {
             if (query == null)
-                files = fileService.getUserFiles(securityUtil.getCurrentUser());
-            else
-                files = fileService.getUserFilesByFilename(securityUtil.getCurrentUser(), query);
+                query = "";
+
+            files = fileService.getUserFilesByFilename(securityUtil.getCurrentUser(), query);
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,
@@ -77,14 +77,6 @@ public class FileControllerAPI {
             try {
                 files = fileService.saveFileFromUser(request, securityUtil.getCurrentUser());
 
-            } catch (FileUploadException e) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Response.build(HttpStatus.BAD_REQUEST,
-                                "File upload error: " + e.getMessage()));
-            } catch (IOException e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,
-                                "Internal server error: " + e.getMessage()));
             } catch (IllegalStateException e) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Response.build(HttpStatus.BAD_REQUEST,
@@ -222,9 +214,15 @@ public class FileControllerAPI {
         try {
             Long lId = Long.parseLong(id);
             fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, description, filename);
-        } catch (Exception e){
+        } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
+        } catch (EntityNotFoundException e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -236,9 +234,15 @@ public class FileControllerAPI {
         try {
             Long lId = Long.parseLong(id);
             fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, file.getDescription(), file.getFileName());
-        } catch (Exception e){
+        } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
+        } catch (EntityNotFoundException e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
         }
 
 
@@ -258,8 +262,8 @@ public class FileControllerAPI {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND,e.getMessage()));
         } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST,e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)

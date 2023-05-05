@@ -36,10 +36,6 @@ public class FileService {
     @Autowired
     private DiskStorageService diskStorageService;
 
-    public List<File> getUserFiles(User user){
-        return fileRepository.getAllBySenderOrderByPostDateDescPostTimeDesc(user);
-    }
-
     public List<File> getUserFilesByFilename(User user, String filename){
         return fileRepository.getAllBySenderAndFileNameIgnoreCaseStartingWithOrderByPostDateDescPostTimeDesc(user, filename);
     }
@@ -226,7 +222,7 @@ public class FileService {
         return file;
     }
 
-    public void updateFileInfo(User user, Long fileId, String description, String filename) throws Exception {
+    public void updateFileInfo(User user, Long fileId, String description, String filename) throws IllegalAccessException {
         Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())

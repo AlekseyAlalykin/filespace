@@ -91,7 +91,7 @@ public class FilespaceService {
         return optionalPermissions.get();
     }
 
-    public void updateFilespace(User user, Long id, String title) throws Exception{
+    public void updateFilespace(User user, Long id, String title) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(id);
 
         if (optionalFilespace.isEmpty())
@@ -113,6 +113,9 @@ public class FilespaceService {
         if (title == null)
             title = "";
 
+        if (title.length() < 3)
+            throw new IllegalArgumentException("The least title length is 3");
+
         if (title.length() > 30)
             title = title.substring(0,30);
 
@@ -122,7 +125,7 @@ public class FilespaceService {
     }
 
     @Transactional
-    public void deleteFilespace(User user, Long id) throws Exception{
+    public void deleteFilespace(User user, Long id) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(id);
 
         if (optionalFilespace.isEmpty())
@@ -153,7 +156,7 @@ public class FilespaceService {
 
     }
 
-    public FileFilespaceRelation attachFileToFilespace(User user, Long filespaceId, Long fileId) throws Exception{
+    public FileFilespaceRelation attachFileToFilespace(User user, Long filespaceId, Long fileId) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
@@ -222,7 +225,8 @@ public class FilespaceService {
     }
 
 
-    public UserFilespaceRelation attachUserToFilespace(User requester, Long filespaceId, UserFilespaceRelation relation) throws Exception{
+    public UserFilespaceRelation attachUserToFilespace(User requester, Long filespaceId,
+                                                       UserFilespaceRelation relation) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
@@ -253,24 +257,24 @@ public class FilespaceService {
             throw new IllegalAccessException("No authority over filespace");
 
         if (!requesterRelation.allowDownload() && relation.allowDownload())
-            throw new IllegalArgumentException("Can't give download permission since you don't have one");
+            throw new IllegalAccessException("Can't give download permission since you don't have one");
 
         if (!requesterRelation.allowUpload() && relation.allowUpload())
-            throw new IllegalArgumentException("Can't give upload permission since you don't have one");
+            throw new IllegalAccessException("Can't give upload permission since you don't have one");
 
         if (!requesterRelation.allowUserManagement() && relation.allowUserManagement())
-            throw new IllegalArgumentException("Can't give user management permission since you don't have one");
+            throw new IllegalAccessException("Can't give user management permission since you don't have one");
 
         if (!requesterRelation.allowFilespaceManagement() && relation.allowFilespaceManagement())
-            throw new IllegalArgumentException("Can't give filespace management permission since you don't have one");
+            throw new IllegalAccessException("Can't give filespace management permission since you don't have one");
 
         Optional<UserFilespaceRelation> optionalTargetRelation = userFilespaceRelationRepository.findById(
                 new CompoundKey(targetedUser.getId(),filespaceId));
         if (optionalTargetRelation.isPresent())
-            throw new IllegalArgumentException("User already attached to filespace");
+            throw new IllegalStateException("User already attached to filespace");
 
         if (!requesterRelation.allowFilespaceManagement() && relation.allowFilespaceManagement().equals(true))
-            throw new IllegalArgumentException("Can't give filespace management permission without having one");
+            throw new IllegalAccessException("Can't give filespace management permission without having one");
 
         relation.setUser(targetedUser);
         relation.setFilespace(filespace);
@@ -283,7 +287,8 @@ public class FilespaceService {
     }
 
     @Transactional
-    public void detachUserFromFilespace(User requester, Long filespaceId, Long userId, Boolean deleteFiles) throws Exception{
+    public void detachUserFromFilespace(User requester, Long filespaceId,
+                                        Long userId, Boolean deleteFiles) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
@@ -331,7 +336,7 @@ public class FilespaceService {
         filespaceRepository.flush();
     }
 
-    public void detachFileFromFilespace(User requester, Long filespaceId, Long fileId) throws Exception{
+    public void detachFileFromFilespace(User requester, Long filespaceId, Long fileId) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
@@ -366,7 +371,7 @@ public class FilespaceService {
         fileFilespaceRelationRepository.delete(fileFilespaceRelation);
     }
 
-    public void updateUserPermissions(User requester, UserFilespaceRelation relation) throws Exception {
+    public void updateUserPermissions(User requester, UserFilespaceRelation relation) throws IllegalAccessException {
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(relation.getFilespace().getId());
 
         if (optionalFilespace.isEmpty())
@@ -402,25 +407,25 @@ public class FilespaceService {
         UserFilespaceRelation targetedUserRelation = optionalTargetedUserRelation.get();
 
         if (!requesterRelation.allowDownload() && relation.allowDownload() && !targetedUserRelation.allowDownload())
-            throw new IllegalArgumentException("Can't give download permission since you don't have one");
+            throw new IllegalAccessException("Can't give download permission since you don't have one");
 
         if (!requesterRelation.allowUpload() && relation.allowUpload() && !targetedUserRelation.allowUpload())
-            throw new IllegalArgumentException("Can't give upload permission since you don't have one");
+            throw new IllegalAccessException("Can't give upload permission since you don't have one");
 
         if (!requesterRelation.allowUserManagement() && relation.allowUserManagement() && !targetedUserRelation.allowUserManagement())
-            throw new IllegalArgumentException("Can't give user management permission since you don't have one");
+            throw new IllegalAccessException("Can't give user management permission since you don't have one");
 
         if (!requesterRelation.allowFilespaceManagement() && relation.allowFilespaceManagement() && !targetedUserRelation.allowFilespaceManagement())
-            throw new IllegalArgumentException("Can't give filespace management permission since you don't have one");
+            throw new IllegalAccessException("Can't give filespace management permission since you don't have one");
 
         if (!requesterRelation.allowDeletion() && relation.allowDeletion() && !targetedUserRelation.allowDeletion())
-            throw new IllegalArgumentException("Can't give filespace management permission since you don't have one");
+            throw new IllegalAccessException("Can't give filespace management permission since you don't have one");
 
         if (requester.equals(target))
-            throw new IllegalArgumentException("Can't change self permissions");
+            throw new IllegalAccessException("Can't change self permissions");
 
         if (!optionalRequesterFilespaceRelation.get().allowFilespaceManagement() && relation.allowFilespaceManagement())
-            throw new IllegalArgumentException("Can't give filespace management permission without having one");
+            throw new IllegalAccessException("Can't give filespace management permission without having one");
 
         targetedUserRelation.setAllowDownload(relation.allowDownload());
         targetedUserRelation.setAllowUpload(relation.allowUpload());

@@ -159,7 +159,7 @@ public class FilespaceControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
@@ -181,10 +181,6 @@ public class FilespaceControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e) {
-
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -245,7 +241,7 @@ public class FilespaceControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e) {
+        } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
@@ -393,8 +389,10 @@ public class FilespaceControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Response.build(HttpStatus.CONFLICT, e.getMessage()));
+        } catch (NullPointerException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
@@ -446,8 +444,7 @@ public class FilespaceControllerAPI {
             Boolean bDeleteFiles;
 
             if (jsonBody != null) {
-                Map<String, Object> result =
-                        new ObjectMapper().readValue(jsonBody, HashMap.class);
+                Map<String, Object> result = new ObjectMapper().readValue(jsonBody, HashMap.class);
 
                 bDeleteFiles = Boolean.TRUE.equals(result.get("deleteFiles"));
             } else
@@ -462,9 +459,12 @@ public class FilespaceControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
         }
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -490,7 +490,7 @@ public class FilespaceControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e){
+        } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
@@ -535,7 +535,7 @@ public class FilespaceControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
@@ -569,7 +569,7 @@ public class FilespaceControllerAPI {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
 
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
