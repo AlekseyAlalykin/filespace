@@ -238,7 +238,7 @@ public class UserService {
             userFilespaceRelationRepository.delete(relation);
 
             if (userFilespaceRelationRepository.countAllByFilespace(filespace) == 0){
-                fileFilespaceRelationRepository.deleteAllByFilespace(filespace);
+                fileFilespaceRelationRepository.deleteByFilespace(filespace);
 
                 fileFilespaceRelationRepository.flush();
 
@@ -252,7 +252,7 @@ public class UserService {
             //Если файлов с данным хеш значение больше нет
             if (fileRepository.countAllByMd5Hash(file.getMd5Hash()) == 1)
                 md5Hashes.add(file.getMd5Hash());
-            fileFilespaceRelationRepository.deleteAllByFile(file);
+            fileFilespaceRelationRepository.deleteByFile(file);
         }
         //Подготовил поток для удаления файлов
         FileDeletingThread thread = new FileDeletingThread(md5Hashes);

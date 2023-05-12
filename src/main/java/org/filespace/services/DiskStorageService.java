@@ -110,12 +110,14 @@ public class DiskStorageService {
         }
     }
 
-    public InputStreamResource getFile(String md5) throws Exception {
+    public byte[] getFile(String md5) throws Exception {
+        /*
         InputStreamResource resource = new InputStreamResource(
                 Files.newInputStream(
-                        Path.of(getPathFromMD5(md5))));
+                        Path.of(getPathFromMD5(md5))));*/
+        return Files.readAllBytes(Path.of(getPathFromMD5(md5)));
 
-        return resource;
+        //return resource;
     }
 
     public Long getFileSize(String md5) throws IOException{

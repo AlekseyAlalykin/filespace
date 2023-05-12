@@ -18,7 +18,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
-import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -72,10 +71,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/api/**").authenticated()
                 .and()
-
-                //.sessionManagement().maximumSessions(5).sessionRegistry(sessions).and().and()
-
-
                 .httpBasic()
                 .authenticationEntryPoint(new BasicAuthenticationEntryPoint());
 
@@ -109,7 +104,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     @Autowired
     public RegisterSessionAuthenticationStrategy registerSessionAuthStr(SessionRegistry sessionRegistry) {
-        return new RegisterSessionAuthenticationStrategy(/*sessionRegistry()*/ sessionRegistry);
+        return new RegisterSessionAuthenticationStrategy(sessionRegistry);
     }
 
     @Bean

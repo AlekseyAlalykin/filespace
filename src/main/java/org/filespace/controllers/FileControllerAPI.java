@@ -17,7 +17,6 @@ import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.NotSupportedException;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.LinkedList;
 import java.util.List;
@@ -161,29 +160,34 @@ public class FileControllerAPI {
             if (accept == null)
                 throw new Exception("Accept header is not present");
 
-            if (accept.equals(MediaType.APPLICATION_JSON_VALUE))
+            if (accept.contains(MediaType.APPLICATION_JSON_VALUE))
                 file = fileService.getFileJSON(securityUtil.getCurrentUser(), lId);
-            else if (accept.equals(MediaType.ALL_VALUE))
+            else if (accept.contains(MediaType.ALL_VALUE) || accept.contains(MediaType.APPLICATION_OCTET_STREAM_VALUE))
                 list = fileService.sendFileToUser(securityUtil.getCurrentUser(), lId);
             else
                 throw new NotSupportedException("Media type isn't supported");
 
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
         } catch (NotSupportedException e){
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .body(Response.build(HttpStatus.NOT_ACCEPTABLE, e.getMessage()));
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
 
-        if (accept.equals(MediaType.APPLICATION_JSON_VALUE))
-            return ResponseEntity.status(HttpStatus.OK).body(file);
+        if (accept.contains(MediaType.APPLICATION_JSON_VALUE))
+            return ResponseEntity.status(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(file);
         else {
             File resourceFile = (File) list.get(0);
             String filename;
@@ -192,17 +196,19 @@ public class FileControllerAPI {
                         replace("+", "%20");
             } catch (Exception e){
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                         .body(Response.build(HttpStatus.INTERNAL_SERVER_ERROR,
                                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase()));
             }
 
+            byte[] array = (byte[])list.get(1);
 
             return ResponseEntity.status(HttpStatus.OK)
-                    .header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
                     .header(HttpHeaders.CONTENT_LENGTH, resourceFile.getSize().toString())
-                    .body((InputStreamResource) list.get(1));
+                    .body(array);
         }
     }
 
@@ -269,4 +275,5 @@ public class FileControllerAPI {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(Response.build(HttpStatus.OK, "File deleted"));
     }
+    
 }

@@ -326,7 +326,7 @@ public class FilespaceService {
         Long usersLeft = userFilespaceRelationRepository.countAllByFilespace(filespace);
 
         if (usersLeft == 0) {
-            fileFilespaceRelationRepository.deleteAllByFilespace(filespace);
+            fileFilespaceRelationRepository.deleteByFilespace(filespace);
             fileFilespaceRelationRepository.flush();
             filespaceRepository.delete(filespace);
         }

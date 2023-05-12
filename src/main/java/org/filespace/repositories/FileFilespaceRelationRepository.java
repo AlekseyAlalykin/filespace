@@ -33,8 +33,4 @@ public interface FileFilespaceRelationRepository extends JpaRepository<FileFiles
     @Query(value = "DELETE FROM files_filespaces WHERE file_id IN " +
             "(SELECT id AS file_id FROM files WHERE sender_id = ?1)", nativeQuery = true)
     public void deleteFilesFromFilespaceByUserId(Long id);
-
-    public void deleteAllByFilespace(Filespace filespace);
-
-    public void deleteAllByFile(File file);
 }

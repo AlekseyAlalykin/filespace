@@ -187,7 +187,7 @@ public class FileService {
 
         fileRepository.save(file);
 
-        InputStreamResource resource = diskStorageService.getFile(file.getMd5Hash());
+        byte[] resource = diskStorageService.getFile(file.getMd5Hash());
         List<Object> list = new LinkedList<>();
         list.add(file);
         list.add(resource);
