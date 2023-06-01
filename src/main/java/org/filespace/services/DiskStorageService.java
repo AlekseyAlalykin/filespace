@@ -120,8 +120,8 @@ public class DiskStorageService {
         //return resource;
     }
 
-    public Long getFileSize(String md5) throws IOException{
-        Path path = Paths.get(getPathFromMD5(md5));
+    public Long getFileSize(String filename) throws IOException{
+        Path path = Paths.get(getTemporaryFilePath(filename));
         return Files.size(path);
     }
 

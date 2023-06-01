@@ -63,15 +63,15 @@ public class FileService {
                 file.setSender(user);
                 file.setFileName(item.getName());
 
-                String tempFileLocation = "";
+                String tempFileName = "";
                 String md5 = "";
 
 
                 try {
-                    tempFileLocation = diskStorageService.temporarySaveFile(stream);
+                    tempFileName = diskStorageService.temporarySaveFile(stream);
 
-                    md5 = diskStorageService.md5FileHash(tempFileLocation);
-                    file.setSize(diskStorageService.getFileSize(md5));
+                    md5 = diskStorageService.md5FileHash(tempFileName);
+                    file.setSize(diskStorageService.getFileSize(tempFileName));
 
                     List<File> filesList;
 
@@ -84,7 +84,7 @@ public class FileService {
                             flag = true;
 
                         for (File fileItem: filesList){
-                            if (fileItem.getSize() == file.getSize()){
+                            if (fileItem.getSize().equals(file.getSize())){
                                 flag = true;
                                 break;
                             }
@@ -101,7 +101,7 @@ public class FileService {
                 }
 
                 try {
-                    diskStorageService.moveToStorageDirectory(md5, tempFileLocation);
+                    diskStorageService.moveToStorageDirectory(md5, tempFileName);
                 } catch (Exception e){
                     throw new Exception(e.getMessage());
                 }
