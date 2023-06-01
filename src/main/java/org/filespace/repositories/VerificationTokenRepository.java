@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface VerificationTokenRepository extends JpaRepository<VerificationToken, Long> {
+public interface VerificationTokenRepository extends JpaRepository<VerificationToken, Integer> {
     public VerificationToken findByToken(String token);
     public void deleteAllByUser(User user);
     public List<VerificationToken> findAllByUserAndType(User user, TokenType type);

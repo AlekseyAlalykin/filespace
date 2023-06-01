@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Integer> {
 
-    public Optional<UserInfo> findUserById(Long id);
+    public Optional<UserInfo> findUserById(Integer id);
 
     public User findUserByUsername(String username);
 

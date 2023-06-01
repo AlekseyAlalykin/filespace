@@ -92,7 +92,7 @@ public class FileControllerAPI {
                 if (contentType == null)
                     throw new IllegalArgumentException("Content-type header is not present");
 
-                Long fileId;
+                Integer fileId;
 
                 if (contentType.equals(MediaType.APPLICATION_JSON_VALUE)){
                     StringBuffer stringBuffer = new StringBuffer();
@@ -111,7 +111,7 @@ public class FileControllerAPI {
                 } else if (contentType.equals(MediaType.APPLICATION_FORM_URLENCODED_VALUE)){
                     String fileIdParam = request.getParameter("fileId");
 
-                    fileId = Long.parseLong(fileIdParam);
+                    fileId = Integer.parseInt(fileIdParam);
 
                     if (fileIdParam == null)
                         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -155,15 +155,15 @@ public class FileControllerAPI {
         File file = null;
 
         try {
-            Long lId = Long.parseLong(id);
+            Integer fileId = Integer.parseInt(id);
 
             if (accept == null)
                 throw new Exception("Accept header is not present");
 
             if (accept.contains(MediaType.APPLICATION_JSON_VALUE))
-                file = fileService.getFileJSON(securityUtil.getCurrentUser(), lId);
+                file = fileService.getFileJSON(securityUtil.getCurrentUser(), fileId);
             else if (accept.contains(MediaType.ALL_VALUE) || accept.contains(MediaType.APPLICATION_OCTET_STREAM_VALUE))
-                list = fileService.sendFileToUser(securityUtil.getCurrentUser(), lId);
+                list = fileService.sendFileToUser(securityUtil.getCurrentUser(), fileId);
             else
                 throw new NotSupportedException("Media type isn't supported");
 
@@ -179,6 +179,10 @@ public class FileControllerAPI {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .body(Response.build(HttpStatus.NOT_ACCEPTABLE, e.getMessage()));
+        } catch (NumberFormatException e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -212,34 +216,16 @@ public class FileControllerAPI {
         }
     }
 
-    @PatchMapping(path = "/{id}", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
-    public ResponseEntity updateFileInfoConsumesURLEncoded(
-            @PathVariable String id,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) String filename){
-        try {
-            Long lId = Long.parseLong(id);
-            fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, description, filename);
-        } catch (IllegalArgumentException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
-        } catch (IllegalAccessException e){
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
-        } catch (EntityNotFoundException e){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
-        }
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(Response.build(HttpStatus.OK, "File info changed"));
-    }
 
     @PatchMapping(path = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE })
     public ResponseEntity updateFileInfo(@PathVariable String id, @RequestBody File file){
         try {
-            Long lId = Long.parseLong(id);
-            fileService.updateFileInfo(securityUtil.getCurrentUser(), lId, file.getDescription(), file.getFileName());
+            Integer fileId = Integer.parseInt(id);
+            fileService.updateFileInfo(securityUtil.getCurrentUser(), fileId, file.getDescription(), file.getFileName());
+        } catch (NumberFormatException e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
         } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
@@ -259,11 +245,14 @@ public class FileControllerAPI {
     @DeleteMapping("/{id}")
     public ResponseEntity deleteFile(@PathVariable String id){
         try {
-            Long lId = Long.parseLong(id);
-            fileService.deleteFile(securityUtil.getCurrentUser(), lId);
+            Integer fileId = Integer.parseInt(id);
+            fileService.deleteFile(securityUtil.getCurrentUser(), fileId);
         } catch (IllegalAccessException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
+        } catch (NumberFormatException e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND,e.getMessage()));
         } catch (EntityNotFoundException e){
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND,e.getMessage()));

@@ -21,16 +21,16 @@ public interface FileFilespaceRelationRepository extends JpaRepository<FileFiles
 
     @Query(value =
             "SELECT file_id AS fileId, file_name AS fileName, size, sender_id AS senderId, description, " +
-            "number_of_downloads AS numberOfDownloads, attach_time AS attachTime, attach_date AS attachDate, username " +
+            "number_of_downloads AS numberOfDownloads, attach_date_time AS attachDateTime, username " +
             "FROM files_filespaces " +
             "JOIN files ON file_id = files.id " +
             "JOIN users ON sender_id = users.id " +
             "WHERE filespace_id = ?1 AND LOWER(file_name) LIKE LOWER(CONCAT(?2,'%')) " +
-            "ORDER BY attach_date DESC, attach_time DESC", nativeQuery = true)
-    public List<FilespaceFileInfo> getFilesFromFilespace(Long id, String filename);
+            "ORDER BY attachDateTime DESC", nativeQuery = true)
+    public List<FilespaceFileInfo> getFilesFromFilespace(Integer id, String filename);
 
     @Modifying
     @Query(value = "DELETE FROM files_filespaces WHERE file_id IN " +
             "(SELECT id AS file_id FROM files WHERE sender_id = ?1)", nativeQuery = true)
-    public void deleteFilesFromFilespaceByUserId(Long id);
+    public void deleteFilesFromFilespaceByUserId(Integer id);
 }

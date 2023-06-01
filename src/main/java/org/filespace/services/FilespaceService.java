@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -62,8 +63,7 @@ public class FilespaceService {
         relation.setUser(user);
         relation.setFilespace(filespace);
 
-        relation.setJoinDate(LocalDate.now());
-        relation.setJoinTime(LocalTime.now());
+        relation.setJoinDateTime(LocalDateTime.now());
 
         relation.setAllowDeletion(true);
         relation.setAllowDownload(true);
@@ -77,7 +77,7 @@ public class FilespaceService {
         return filespace;
     }
 
-    public FilespacePermissions getFilespaceById(User user, Long filespaceId) throws Exception{
+    public FilespacePermissions getFilespaceById(User user, Integer filespaceId) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
@@ -91,7 +91,7 @@ public class FilespaceService {
         return optionalPermissions.get();
     }
 
-    public void updateFilespace(User user, Long id, String title) throws IllegalAccessException{
+    public void updateFilespace(User user, Integer id, String title) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(id);
 
         if (optionalFilespace.isEmpty())
@@ -125,7 +125,7 @@ public class FilespaceService {
     }
 
     @Transactional
-    public void deleteFilespace(User user, Long id) throws IllegalAccessException{
+    public void deleteFilespace(User user, Integer id) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(id);
 
         if (optionalFilespace.isEmpty())
@@ -156,7 +156,7 @@ public class FilespaceService {
 
     }
 
-    public FileFilespaceRelation attachFileToFilespace(User user, Long filespaceId, Long fileId) throws IllegalAccessException{
+    public FileFilespaceRelation attachFileToFilespace(User user, Integer filespaceId, Integer fileId) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
@@ -188,8 +188,7 @@ public class FilespaceService {
 
         FileFilespaceRelation relation = new FileFilespaceRelation();
 
-        relation.setAttachDate(LocalDate.now());
-        relation.setAttachTime(LocalTime.now());
+        relation.setAttachDateTime(LocalDateTime.now());
         relation.setFile(file);
         relation.setFilespace(filespace);
 
@@ -198,7 +197,7 @@ public class FilespaceService {
         return relation;
     }
 
-    public List<FilespaceFileInfo> getFilesFromFilespace(User user, Long id, String query) throws Exception{
+    public List<FilespaceFileInfo> getFilesFromFilespace(User user, Integer id, String query) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(id);
 
         if (optionalFilespace.isEmpty())
@@ -211,7 +210,7 @@ public class FilespaceService {
         return fileFilespaceRelationRepository.getFilesFromFilespace(id, query);
     }
 
-    public List<FilespaceUserInfo> getUsersOfFilespace(User user, Long id, String username) throws Exception {
+    public List<FilespaceUserInfo> getUsersOfFilespace(User user, Integer id, String username) throws IllegalAccessException {
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(id);
 
         if (optionalFilespace.isEmpty())
@@ -225,7 +224,7 @@ public class FilespaceService {
     }
 
 
-    public UserFilespaceRelation attachUserToFilespace(User requester, Long filespaceId,
+    public UserFilespaceRelation attachUserToFilespace(User requester, Integer filespaceId,
                                                        UserFilespaceRelation relation) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
@@ -278,8 +277,7 @@ public class FilespaceService {
 
         relation.setUser(targetedUser);
         relation.setFilespace(filespace);
-        relation.setJoinDate(LocalDate.now());
-        relation.setJoinTime(LocalTime.now());
+        relation.setJoinDateTime(LocalDateTime.now());
 
         userFilespaceRelationRepository.saveAndFlush(relation);
 
@@ -287,8 +285,8 @@ public class FilespaceService {
     }
 
     @Transactional
-    public void detachUserFromFilespace(User requester, Long filespaceId,
-                                        Long userId, Boolean deleteFiles) throws IllegalAccessException{
+    public void detachUserFromFilespace(User requester, Integer filespaceId,
+                                        Integer userId, Boolean deleteFiles) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())
@@ -323,7 +321,7 @@ public class FilespaceService {
 
         userFilespaceRelationRepository.delete(optionalTargetedUserRelation.get());
 
-        Long usersLeft = userFilespaceRelationRepository.countAllByFilespace(filespace);
+        Integer usersLeft = userFilespaceRelationRepository.countAllByFilespace(filespace);
 
         if (usersLeft == 0) {
             fileFilespaceRelationRepository.deleteByFilespace(filespace);
@@ -336,7 +334,7 @@ public class FilespaceService {
         filespaceRepository.flush();
     }
 
-    public void detachFileFromFilespace(User requester, Long filespaceId, Long fileId) throws IllegalAccessException{
+    public void detachFileFromFilespace(User requester, Integer filespaceId, Integer fileId) throws IllegalAccessException{
         Optional<Filespace> optionalFilespace = filespaceRepository.findById(filespaceId);
 
         if (optionalFilespace.isEmpty())

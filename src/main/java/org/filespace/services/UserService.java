@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -78,7 +78,7 @@ public class UserService {
         userRepository.save(user);
 
         VerificationToken verificationToken = new VerificationToken(UUID.randomUUID().toString(), user,
-                LocalDate.now(), LocalTime.now(), TokenType.REGISTRATION);
+                LocalDateTime.now(), TokenType.REGISTRATION);
 
         verificationTokenRepository.save(verificationToken);
 
@@ -94,7 +94,7 @@ public class UserService {
         return user;
     }
 
-    public Object getUserById(Long id){
+    public Object getUserById(Integer id){
         Optional<?> optional;
 
         if (id.equals(securityUtil.getCurrentUserId()))
@@ -114,7 +114,7 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteUser(User requester, Long userId) throws IllegalAccessException{
+    public void deleteUser(User requester, Integer userId) throws IllegalAccessException{
         //Проверка пользователя
         Optional<User> optionalUser = userRepository.findById(userId);
 
@@ -127,7 +127,7 @@ public class UserService {
             throw new IllegalAccessException("No authority");
 
         VerificationToken verificationToken = new VerificationToken(UUID.randomUUID().toString(), target,
-                LocalDate.now(), LocalTime.now(), TokenType.DELETION);
+                LocalDateTime.now(), TokenType.DELETION);
 
         verificationTokenRepository.saveAndFlush(verificationToken);
 
@@ -138,7 +138,7 @@ public class UserService {
     }
 
     @Transactional
-    public void updateUser(User requester, Long userId, String username, String password, String email) throws IllegalAccessException{
+    public void updateUser(User requester, Integer userId, String username, String password, String email) throws IllegalAccessException{
         Optional<User> optionalUser = userRepository.findById(userId);
 
         if (optionalUser.isEmpty())
@@ -185,7 +185,7 @@ public class UserService {
             }
 
             verificationToken = new VerificationToken(UUID.randomUUID().toString(),
-                    oldUserState, LocalDate.now(), LocalTime.now(), TokenType.EMAIL_CHANGE, email);
+                    oldUserState, LocalDateTime.now(), TokenType.EMAIL_CHANGE, email);
             verificationTokenRepository.save(verificationToken);
 
             newUserState.setEmail(oldUserState.getEmail());
@@ -248,7 +248,7 @@ public class UserService {
 
         List<String> md5Hashes = new LinkedList<>();
         //Удаление связей файлов пользователя и filespace
-        for (File file: fileRepository.getAllBySenderOrderByPostDateDescPostTimeDesc(user)){
+        for (File file: fileRepository.getAllBySenderOrderByPostDateTimeDesc(user)){
             //Если файлов с данным хеш значение больше нет
             if (fileRepository.countAllByMd5Hash(file.getMd5Hash()) == 1)
                 md5Hashes.add(file.getMd5Hash());

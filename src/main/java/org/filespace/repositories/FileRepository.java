@@ -8,14 +8,16 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface FileRepository extends JpaRepository<File, Long> {
+public interface FileRepository extends JpaRepository<File, Integer> {
     public boolean existsByMd5Hash(String md5Hash);
 
-    public List<File> getAllBySenderOrderByPostDateDescPostTimeDesc(User sender);
+    public List<File> getByMd5Hash(String md5hash);
+
+    public List<File> getAllBySenderOrderByPostDateTimeDesc(User sender);
 
     public void deleteAllBySender(User sender);
 
     public int countAllByMd5Hash(String md5Hash);
 
-    public List<File> getAllBySenderAndFileNameIgnoreCaseStartingWithOrderByPostDateDescPostTimeDesc(User sender, String filename);
+    public List<File> getAllBySenderAndFileNameIgnoreCaseStartingWithOrderByPostDateTimeDesc(User sender, String filename);
 }

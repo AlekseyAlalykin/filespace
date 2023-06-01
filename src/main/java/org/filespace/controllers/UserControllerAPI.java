@@ -29,29 +29,6 @@ public class UserControllerAPI {
     @Autowired
     private SessionManager sessionManager;
 
-    @PostMapping(consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
-    public ResponseEntity createUserConsumesURLEncoded(
-            @RequestParam String username,
-            @RequestParam String password,
-            @RequestParam String email){
-
-        User user;
-
-        try {
-            user = userService.registerUser(username, password, email);
-
-        } catch (IllegalArgumentException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
-        } catch (IllegalStateException e){
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Response.build(HttpStatus.CONFLICT, e.getMessage()));
-        }
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(user);
-    }
-
     @PostMapping(consumes = { MediaType.APPLICATION_JSON_VALUE })
     public ResponseEntity createUser(@RequestBody User user){
 
@@ -90,10 +67,13 @@ public class UserControllerAPI {
         Object user;
 
         try {
-            Long lId = securityUtil.getUserId(id);
+            Integer userId = securityUtil.getUserId(id);
 
-            user = userService.getUserById(lId);
-        } catch (Exception e){
+            user = userService.getUserById(userId);
+        } catch (EntityNotFoundException e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, "No user with such id found"));
+        } catch (NumberFormatException e){
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, "No user with such id found"));
         }
@@ -122,44 +102,18 @@ public class UserControllerAPI {
                 .body(list);
     }
 
-    @PatchMapping(path = "/{id}", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
-    public ResponseEntity updateUserConsumesURLEncoded(
-            @PathVariable String id,
-            @RequestParam(required = false) String username,
-            @RequestParam(required = false) String password,
-            @RequestParam(required = false) String email){
-
-        try {
-            Long lId = securityUtil.getUserId(id);
-
-            userService.updateUser(securityUtil.getCurrentUser(), lId, username, password, email);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
-
-        } catch (IllegalAccessException e){
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Response.build(HttpStatus.FORBIDDEN, e.getMessage()));
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Response.build(HttpStatus.BAD_REQUEST, e.getMessage()));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Response.build(HttpStatus.CONFLICT, e.getMessage()));
-        }
-
-        return ResponseEntity.status(HttpStatus.OK).body(Response.build(HttpStatus.OK,"OK"));
-    }
-
     @PatchMapping(path = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE })
     public ResponseEntity updateUser(@PathVariable String id, @RequestBody User user){
 
         try {
-            Long lId = securityUtil.getUserId(id);
+            Integer userId = securityUtil.getUserId(id);
 
-            userService.updateUser(securityUtil.getCurrentUser(), lId, user.getUsername(), user.getPassword(), user.getEmail());
+            userService.updateUser(securityUtil.getCurrentUser(), userId, user.getUsername(), user.getPassword(), user.getEmail());
         } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
+
+        } catch (NumberFormatException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 
@@ -182,10 +136,14 @@ public class UserControllerAPI {
     public ResponseEntity deleteUser(@PathVariable String id){
 
         try {
-            Long lId = securityUtil.getUserId(id);
+            Integer userId = securityUtil.getUserId(id);
 
-            userService.deleteUser(securityUtil.getCurrentUser(), lId);
+            userService.deleteUser(securityUtil.getCurrentUser(), userId);
         } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
+
+        } catch (NumberFormatException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Response.build(HttpStatus.NOT_FOUND, e.getMessage()));
 

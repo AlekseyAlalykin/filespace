@@ -11,6 +11,7 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
@@ -29,19 +30,13 @@ public class FileFilespaceRelation extends CompoundModel {
     private Filespace filespace;
 
     @NotNull
-    @Column(name = "attach_date",
+    @Column(name = "attach_date_time",
             nullable = false)
-    private LocalDate attachDate;
+    private LocalDateTime attachDateTime;
 
-    @NotNull
-    @Column(name = "attach_time",
-            nullable = false)
-    private LocalTime attachTime;
-
-    public FileFilespaceRelation(@NotNull CompoundKey key, @NotNull LocalDate attachDate, @NotNull LocalTime attachTime) {
+    public FileFilespaceRelation(@NotNull CompoundKey key, @NotNull LocalDateTime attachDateTime) {
         super(key);
-        this.attachDate = attachDate;
-        this.attachTime = attachTime;
+        this.attachDateTime = attachDateTime;
     }
 
     public FileFilespaceRelation() {
@@ -63,19 +58,11 @@ public class FileFilespaceRelation extends CompoundModel {
         this.filespace = filespace;
     }
 
-    public LocalDate getAttachDate() {
-        return attachDate;
+    public LocalDateTime getAttachDateTime() {
+        return attachDateTime;
     }
 
-    public void setAttachDate(LocalDate attachDate) {
-        this.attachDate = attachDate;
-    }
-
-    public LocalTime getAttachTime() {
-        return attachTime;
-    }
-
-    public void setAttachTime(LocalTime attachTime) {
-        this.attachTime = attachTime;
+    public void setAttachDateTime(LocalDateTime attachDateTime) {
+        this.attachDateTime = attachDateTime;
     }
 }

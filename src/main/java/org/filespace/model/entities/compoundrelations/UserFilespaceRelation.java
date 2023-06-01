@@ -8,6 +8,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
@@ -46,13 +47,10 @@ public class UserFilespaceRelation extends CompoundModel {
             nullable = false)
     private Boolean allowFilespaceManagement;
 
-    @Column(name = "join_date",
-            nullable = false)
-    private LocalDate joinDate;
 
-    @Column(name = "join_time",
+    @Column(name = "join_date_time",
             nullable = false)
-    private LocalTime joinTime;
+    private LocalDateTime joinDateTime;
 
     public UserFilespaceRelation() {
     }
@@ -113,19 +111,11 @@ public class UserFilespaceRelation extends CompoundModel {
         this.allowFilespaceManagement = allowFilespaceManagement;
     }
 
-    public LocalDate getJoinDate() {
-        return joinDate;
+    public LocalDateTime getJoinDateTime() {
+        return joinDateTime;
     }
 
-    public void setJoinDate(LocalDate joinDate) {
-        this.joinDate = joinDate;
-    }
-
-    public LocalTime getJoinTime() {
-        return joinTime;
-    }
-
-    public void setJoinTime(LocalTime joinTime) {
-        this.joinTime = joinTime;
+    public void setJoinDateTime(LocalDateTime joinDateTime) {
+        this.joinDateTime = joinDateTime;
     }
 }

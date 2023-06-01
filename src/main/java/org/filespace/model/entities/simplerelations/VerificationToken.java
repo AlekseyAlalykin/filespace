@@ -1,18 +1,33 @@
 package org.filespace.model.entities.simplerelations;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.util.ResourceUtils;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Properties;
 
 @Entity
 @Table(name = "verification_tokens")
 public class VerificationToken extends Model{
-    @Value("${token-expiration}")
-    private Integer EXPIRATION;
+
+    public static Integer EXPIRATION;
+
+    static {
+        try {
+            Properties props = new Properties();
+            props.load(new ClassPathResource("application.properties").getInputStream());
+            EXPIRATION = Integer.parseInt(props.getProperty("token-expiration"));
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
 
     @NotNull
     @Column(name = "token",
@@ -26,14 +41,9 @@ public class VerificationToken extends Model{
     private User user;
 
     @NotNull
-    @Column(name = "issue_date",
+    @Column(name = "issue_date_time",
             nullable = false)
-    private LocalDate issueDate;
-
-    @NotNull
-    @Column(name = "issue_time",
-            nullable = false)
-    private LocalTime issueTime;
+    private LocalDateTime issueDateTime;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -51,8 +61,7 @@ public class VerificationToken extends Model{
     private String value;
 
     public boolean isExpired(){
-        LocalDateTime expiryDateTime = LocalDateTime.of(issueDate, issueTime);
-        if (expiryDateTime.plusMinutes(EXPIRATION).isBefore(LocalDateTime.now()))
+        if (issueDateTime.plusMinutes(EXPIRATION).isBefore(LocalDateTime.now()))
             return true;
 
         return false;
@@ -62,21 +71,19 @@ public class VerificationToken extends Model{
 
     }
 
-    public VerificationToken(String token, User user, LocalDate issueDate, LocalTime issueTime, TokenType type) {
+    public VerificationToken(String token, User user, LocalDateTime issueDateTime, TokenType type) {
         this.token = token;
         this.user = user;
-        this.issueDate = issueDate;
-        this.issueTime = issueTime;
+        this.issueDateTime = issueDateTime;
         this.type = type;
 
         isConfirmed = false;
     }
 
-    public VerificationToken(String token, User user, LocalDate issueDate, LocalTime issueTime, TokenType type, String value) {
+    public VerificationToken(String token, User user, LocalDateTime issueDateTime, TokenType type, String value) {
         this.token = token;
         this.user = user;
-        this.issueDate = issueDate;
-        this.issueTime = issueTime;
+        this.issueDateTime = issueDateTime;
         this.type = type;
         this.value = value;
 
@@ -103,20 +110,12 @@ public class VerificationToken extends Model{
         return EXPIRATION;
     }
 
-    public LocalDate getIssueDate() {
-        return issueDate;
+    public LocalDateTime getIssueDateTime() {
+        return issueDateTime;
     }
 
-    public void setIssueDate(LocalDate issueDate) {
-        this.issueDate = issueDate;
-    }
-
-    public LocalTime getIssueTime() {
-        return issueTime;
-    }
-
-    public void setIssueTime(LocalTime issueTime) {
-        this.issueTime = issueTime;
+    public void setIssueDateTime(LocalDateTime issueDateTime) {
+        this.issueDateTime = issueDateTime;
     }
 
     public TokenType getType() {

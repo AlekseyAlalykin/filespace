@@ -19,37 +19,37 @@ public interface UserFilespaceRelationRepository extends JpaRepository<UserFiles
     @Query(value =
             "SELECT id, title, allow_download AS allowDownload, allow_upload AS allowUpload, allow_deletion AS allowDeletion, " +
                     "allow_user_management AS allowUserManagement, allow_filespace_management AS allowFilespaceManagement, " +
-                    "join_date AS joinDate, join_time AS joinTime " +
+                    "join_date_time AS joinDateTime " +
                     "FROM users_filespaces " +
                     "JOIN filespaces ON filespace_id = id " +
                     "WHERE user_id = ?1 AND LOWER(title) LIKE LOWER(CONCAT(?2,'%'))" +
-                    "ORDER BY joinDate DESC, joinTime DESC",
+                    "ORDER BY joinDateTime DESC",
             nativeQuery = true)
-    public List<FilespacePermissions> findFilespacesAndPermissionsByUserIdAndTitle(Long userId, String title);
+    public List<FilespacePermissions> findFilespacesAndPermissionsByUserIdAndTitle(Integer userId, String title);
 
     @Query(value =
             "SELECT id, title, allow_download AS allowDownload, allow_upload AS allowUpload, allow_deletion AS allowDeletion, " +
             "allow_user_management AS allowUserManagement, allow_filespace_management AS allowFilespaceManagement, " +
-            "join_date AS joinDate, join_time AS joinTime " +
+            "join_date_time AS joinDateTime " +
             "FROM users_filespaces " +
             "JOIN filespaces ON filespace_id = id " +
             "WHERE user_id = ?1 AND filespace_id = ?2 " +
-            "ORDER BY joinDate DESC, joinTime DESC",
+            "ORDER BY joinDateTime DESC",
             nativeQuery = true)
-    public Optional<FilespacePermissions> findFilespaceAndPermissionsByUserIdAndFilespaceId(Long userId, Long filespaceId);
+    public Optional<FilespacePermissions> findFilespaceAndPermissionsByUserIdAndFilespaceId(Integer userId, Integer filespaceId);
 
     public void deleteByFilespace(Filespace filespace);
 
     @Query(value =
             "SELECT id, username, allow_download AS allowDownload, allow_upload AS allowUpload, allow_deletion AS allowDeletion, " +
             "allow_user_management AS allowUserManagement, allow_filespace_management AS allowFilespaceManagement, " +
-            "join_date AS joinDate, join_time AS joinTime " +
+            "join_date_time AS joinDateTime " +
             "FROM users_filespaces " +
             "JOIN users ON user_id = id " +
             "WHERE filespace_id = ?1 AND LOWER(username) LIKE LOWER(CONCAT(?2,'%'))" +
-            "ORDER BY joinDate DESC, joinTime DESC",
+            "ORDER BY joinDateTime DESC",
             nativeQuery = true)
-    public List<FilespaceUserInfo> getFilespaceUsersByIdAndUsername(Long id, String username);
+    public List<FilespaceUserInfo> getFilespaceUsersByIdAndUsername(Integer id, String username);
 
-    public Long countAllByFilespace(Filespace filespace);
+    public Integer countAllByFilespace(Filespace filespace);
 }

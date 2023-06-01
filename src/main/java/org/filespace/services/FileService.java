@@ -1,5 +1,6 @@
 package org.filespace.services;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
@@ -10,15 +11,13 @@ import org.filespace.model.entities.simplerelations.File;
 import org.filespace.model.entities.simplerelations.User;
 import org.filespace.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 import java.io.InputStream;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +36,7 @@ public class FileService {
     private DiskStorageService diskStorageService;
 
     public List<File> getUserFilesByFilename(User user, String filename){
-        return fileRepository.getAllBySenderAndFileNameIgnoreCaseStartingWithOrderByPostDateDescPostTimeDesc(user, filename);
+        return fileRepository.getAllBySenderAndFileNameIgnoreCaseStartingWithOrderByPostDateTimeDesc(user, filename);
     }
 
     @Transactional
@@ -59,8 +58,7 @@ public class FileService {
             if (!item.isFormField()) {
                 File file = new File();
 
-                file.setPostDate(LocalDate.now());
-                file.setPostTime(LocalTime.now());
+                file.setPostDateTime(LocalDateTime.now());
                 file.setNumberOfDownloads(0);
                 file.setSender(user);
                 file.setFileName(item.getName());
@@ -68,9 +66,34 @@ public class FileService {
                 String tempFileLocation = "";
                 String md5 = "";
 
+
                 try {
                     tempFileLocation = diskStorageService.temporarySaveFile(stream);
+
                     md5 = diskStorageService.md5FileHash(tempFileLocation);
+                    file.setSize(diskStorageService.getFileSize(md5));
+
+                    List<File> filesList;
+
+                    boolean flag = false;
+
+                    do {
+                        filesList = fileRepository.getByMd5Hash(md5);
+
+                        if (filesList.size() == 0)
+                            flag = true;
+
+                        for (File fileItem: filesList){
+                            if (fileItem.getSize() == file.getSize()){
+                                flag = true;
+                                break;
+                            }
+                        }
+
+                        if (!flag)
+                            md5 = DigestUtils.md5Hex(md5);
+                    } while (!flag);
+
                 } catch (Exception e){
                     e.printStackTrace();
 
@@ -84,7 +107,6 @@ public class FileService {
                 }
 
                 file.setMd5Hash(md5);
-                file.setSize(diskStorageService.getFileSize(md5));
 
                 files.add(file);
 
@@ -93,8 +115,8 @@ public class FileService {
             else {
                 if (item.getFieldName().equals("description")){
                     description = Streams.asString(stream, "UTF-8");
-                    if (description.length() > 200)
-                        description = description.substring(0,201);
+                    if (description.length() > 400)
+                        description = description.substring(0,401);
                 }
             }
 
@@ -122,7 +144,7 @@ public class FileService {
         return files;
     }
 
-    public File copyFile(User user, Long fileId) throws Exception {
+    public File copyFile(User user, Integer fileId) throws Exception {
         Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())
@@ -148,8 +170,7 @@ public class FileService {
         File copy = new File(user,
                 originalFile.getFileName(),
                 originalFile.getSize(),
-                LocalDate.now(),
-                LocalTime.now(),
+                LocalDateTime.now(),
                 0,
                 originalFile.getDescription(),
                 originalFile.getMd5Hash());
@@ -160,7 +181,7 @@ public class FileService {
     }
 
     @Transactional
-    public List<Object> sendFileToUser(User user, Long fileId) throws Exception {
+    public List<Object> sendFileToUser(User user, Integer fileId) throws Exception {
         Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())
@@ -196,7 +217,7 @@ public class FileService {
         return list;
     }
 
-    public File getFileJSON(User user, Long fileId) throws Exception{
+    public File getFileJSON(User user, Integer fileId) throws Exception{
         Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())
@@ -222,7 +243,7 @@ public class FileService {
         return file;
     }
 
-    public void updateFileInfo(User user, Long fileId, String description, String filename) throws IllegalAccessException {
+    public void updateFileInfo(User user, Integer fileId, String description, String filename) throws IllegalAccessException {
         Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())
@@ -234,8 +255,8 @@ public class FileService {
             throw new IllegalAccessException("No authority over file");
 
         if (description != null) {
-            if (description.length() > 200)
-                description = description.substring(0, 201);
+            if (description.length() > 400)
+                description = description.substring(0, 401);
 
             file.setDescription(description);
         }
@@ -259,7 +280,7 @@ public class FileService {
     }
 
     @Transactional
-    public void deleteFile(User user, Long fileId) throws Exception{
+    public void deleteFile(User user, Integer fileId) throws Exception{
         Optional<File> optional = fileRepository.findById(fileId);
 
         if (optional.isEmpty())

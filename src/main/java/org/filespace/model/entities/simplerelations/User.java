@@ -41,7 +41,7 @@ public class User extends Model {
             message = "Is not a valid email")
     @Column(name = "email",
             nullable = false,
-            length = 50,
+            length = 254,
             unique = true)
     private String email;
 

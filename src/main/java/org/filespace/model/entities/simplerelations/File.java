@@ -10,6 +10,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
@@ -39,14 +40,9 @@ public class File extends Model {
     private Long size;
 
     @NotNull
-    @Column(name = "post_date",
+    @Column(name = "post_date_time",
             nullable = false)
-    private LocalDate postDate;
-
-    @NotNull
-    @Column(name = "post_time",
-            nullable = false)
-    private LocalTime postTime;
+    private LocalDateTime postDateTime;
 
     @NotNull
     @Min(0)
@@ -57,7 +53,7 @@ public class File extends Model {
     @NotNull
     @Column(name = "description",
             nullable = false,
-            length = 200)
+            length = 400)
     private String description;
 
     @JsonIgnore
@@ -82,12 +78,11 @@ public class File extends Model {
 
     }
 
-    public File(User sender, String fileName, Long size, LocalDate postDate, LocalTime postTime, Integer numberOfDownloads, String description, String md5Hash) {
+    public File(User sender, String fileName, Long size, LocalDateTime postDateTime, Integer numberOfDownloads, String description, String md5Hash) {
         this.sender = sender;
         this.fileName = fileName;
         this.size = size;
-        this.postDate = postDate;
-        this.postTime = postTime;
+        this.postDateTime = postDateTime;
         this.numberOfDownloads = numberOfDownloads;
         this.description = description;
         this.md5Hash = md5Hash;
@@ -101,20 +96,12 @@ public class File extends Model {
         this.size = size;
     }
 
-    public LocalDate getPostDate() {
-        return postDate;
+    public LocalDateTime getPostDateTime() {
+        return postDateTime;
     }
 
-    public void setPostDate(LocalDate postDate) {
-        this.postDate = postDate;
-    }
-
-    public LocalTime getPostTime() {
-        return postTime;
-    }
-
-    public void setPostTime(LocalTime postTime) {
-        this.postTime = postTime;
+    public void setPostDateTime(LocalDateTime postDateTime) {
+        this.postDateTime = postDateTime;
     }
 
     public Integer getNumberOfDownloads() {

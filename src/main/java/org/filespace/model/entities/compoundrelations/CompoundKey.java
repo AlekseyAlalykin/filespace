@@ -7,31 +7,31 @@ import java.util.Objects;
 @Embeddable
 public class CompoundKey implements Serializable {
 
-    private Long genericId;
+    private Integer genericId;
 
-    private Long filespaceId;
+    private Integer filespaceId;
 
     public CompoundKey() {
     }
 
-    public CompoundKey(Long genericId, Long filespaceId) {
+    public CompoundKey(Integer genericId, Integer filespaceId) {
         this.genericId = genericId;
         this.filespaceId = filespaceId;
     }
 
-    public Long getGenericId() {
+    public Integer getGenericId() {
         return genericId;
     }
 
-    public void setGenericId(Long genericId) {
+    public void setGenericId(Integer genericId) {
         this.genericId = genericId;
     }
 
-    public Long getFilespaceId() {
+    public Integer getFilespaceId() {
         return filespaceId;
     }
 
-    public void setFilespaceId(Long filespaceId) {
+    public void setFilespaceId(Integer filespaceId) {
         this.filespaceId = filespaceId;
     }
 
