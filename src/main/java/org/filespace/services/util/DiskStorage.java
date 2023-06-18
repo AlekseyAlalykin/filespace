@@ -1,4 +1,4 @@
-package org.filespace.services;
+package org.filespace.services.util;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
@@ -12,7 +12,7 @@ import java.nio.file.*;
 
 
 @Service
-public class DiskStorageService {
+public class DiskStorage {
 
     @Value("${storage-directory}")
     private String storageDirectory;
@@ -27,7 +27,7 @@ public class DiskStorageService {
         return this.maxContentLength;
     }
 
-    public DiskStorageService(){
+    public DiskStorage(){
     }
 
     public String getRootDirectory() {

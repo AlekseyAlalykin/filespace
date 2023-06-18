@@ -1,4 +1,4 @@
-package org.filespace.services;
+package org.filespace.services.impl;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.fileupload.FileItemIterator;
@@ -10,6 +10,7 @@ import org.filespace.model.entities.compoundrelations.UserFilespaceRelation;
 import org.filespace.model.entities.simplerelations.File;
 import org.filespace.model.entities.simplerelations.User;
 import org.filespace.repositories.*;
+import org.filespace.services.util.DiskStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +34,7 @@ public class FileService {
     private FileFilespaceRelationRepository fileFilespaceRelationRepository;
 
     @Autowired
-    private DiskStorageService diskStorageService;
+    private DiskStorage storage;
 
     public List<File> getUserFilesByFilename(User user, String filename){
         return fileRepository.getAllBySenderAndFileNameIgnoreCaseStartingWithOrderByPostDateTimeDesc(user, filename);
@@ -68,10 +69,10 @@ public class FileService {
 
 
                 try {
-                    tempFileName = diskStorageService.temporarySaveFile(stream);
+                    tempFileName = storage.temporarySaveFile(stream);
 
-                    md5 = diskStorageService.md5FileHash(tempFileName);
-                    file.setSize(diskStorageService.getFileSize(tempFileName));
+                    md5 = storage.md5FileHash(tempFileName);
+                    file.setSize(storage.getFileSize(tempFileName));
 
                     List<File> filesList;
 
@@ -101,7 +102,7 @@ public class FileService {
                 }
 
                 try {
-                    diskStorageService.moveToStorageDirectory(md5, tempFileName);
+                    storage.moveToStorageDirectory(md5, tempFileName);
                 } catch (Exception e){
                     throw new Exception(e.getMessage());
                 }
@@ -135,7 +136,7 @@ public class FileService {
 
         } catch (Exception e) {
             for (File file: files){
-                diskStorageService.deleteFile(file.getMd5Hash());
+                storage.deleteFile(file.getMd5Hash());
             }
 
             throw e;
@@ -208,7 +209,7 @@ public class FileService {
 
         fileRepository.save(file);
 
-        byte[] resource = diskStorageService.getFile(file.getMd5Hash());
+        byte[] resource = storage.getFile(file.getMd5Hash());
         List<Object> list = new LinkedList<>();
         list.add(file);
         list.add(resource);
@@ -297,7 +298,7 @@ public class FileService {
         fileRepository.deleteById(fileId);
 
         if (!fileRepository.existsByMd5Hash(md5))
-            diskStorageService.deleteFile(md5);
+            storage.deleteFile(md5);
     }
 
 }

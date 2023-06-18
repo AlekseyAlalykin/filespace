@@ -11,7 +11,7 @@ import org.filespace.model.intermediate.FilespacePermissions;
 import org.filespace.model.entities.simplerelations.Filespace;
 import org.filespace.model.intermediate.FilespaceUserInfo;
 import org.filespace.security.SecurityUtil;
-import org.filespace.services.FilespaceService;
+import org.filespace.services.impl.FilespaceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

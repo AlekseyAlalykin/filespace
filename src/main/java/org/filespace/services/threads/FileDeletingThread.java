@@ -1,6 +1,6 @@
 package org.filespace.services.threads;
 
-import org.filespace.services.DiskStorageService;
+import org.filespace.services.util.DiskStorage;
 
 import java.io.IOException;
 import java.util.List;
@@ -16,9 +16,9 @@ public class FileDeletingThread extends CustomThread {
     @Override
     public void run() {
         for (String md5: md5Hashes){
-            DiskStorageService diskStorageService = new DiskStorageService();
+            DiskStorage storage = new DiskStorage();
             try {
-                diskStorageService.deleteFile(md5);
+                storage.deleteFile(md5);
             } catch (IOException e){
                 e.printStackTrace();
             }

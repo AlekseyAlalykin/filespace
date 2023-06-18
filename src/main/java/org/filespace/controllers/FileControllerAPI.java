@@ -1,15 +1,13 @@
 package org.filespace.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.filespace.config.Response;
 import org.filespace.model.entities.simplerelations.File;
 import org.filespace.security.SecurityUtil;
-import org.filespace.services.DiskStorageService;
-import org.filespace.services.FileService;
+import org.filespace.services.util.DiskStorage;
+import org.filespace.services.impl.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +31,7 @@ public class FileControllerAPI {
     private FileService fileService;
 
     @Autowired
-    private DiskStorageService diskStorageService;
+    private DiskStorage storage;
 
     @GetMapping
     public ResponseEntity getFiles(@RequestParam(name = "q", required = false) String query){
@@ -62,10 +60,10 @@ public class FileControllerAPI {
             return ResponseEntity.status(HttpStatus.LENGTH_REQUIRED)
                     .body(Response.build(HttpStatus.LENGTH_REQUIRED, "Content length is unknown"));
 
-        if (length > diskStorageService.getMaxContentLength())
+        if (length > storage.getMaxContentLength())
             return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                     .body(Response.build(HttpStatus.PAYLOAD_TOO_LARGE,
-                            "Content length exceeds set limit of: " + diskStorageService.getMaxContentLength()));
+                            "Content length exceeds set limit of: " + storage.getMaxContentLength()));
 
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
 

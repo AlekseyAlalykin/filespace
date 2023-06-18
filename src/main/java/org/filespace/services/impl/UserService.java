@@ -1,4 +1,4 @@
-package org.filespace.services;
+package org.filespace.services.impl;
 
 import org.filespace.model.entities.compoundrelations.UserFilespaceRelation;
 import org.filespace.model.entities.simplerelations.*;
@@ -8,6 +8,8 @@ import org.filespace.security.SecurityUtil;
 import org.filespace.security.SessionManager;
 import org.filespace.services.threads.EmailThread;
 import org.filespace.services.threads.FileDeletingThread;
+import org.filespace.services.util.MailSender;
+import org.filespace.services.util.ValidatorImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -40,7 +42,7 @@ public class UserService {
     private VerificationTokenRepository verificationTokenRepository;
 
     @Autowired
-    private ValidationService validationService;
+    private ValidatorImpl validator;
 
     @Autowired
     private SessionManager sessionManager;
@@ -49,7 +51,7 @@ public class UserService {
     private SecurityUtil securityUtil;
 
     @Autowired
-    private EmailServiceImpl emailService;
+    private MailSender emailService;
 
     @Transactional
     public User registerUser(String username, String password, String email){
@@ -59,8 +61,8 @@ public class UserService {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
         User user = new User(username, encoder.encode(password), email, LocalDate.now());
 
-        if (!validationService.validate(user))
-            throw new IllegalArgumentException(validationService.getConstrainsViolations(user));
+        if (!validator.validate(user))
+            throw new IllegalArgumentException(validator.getConstrainsViolations(user));
 
         //Проверка если кто то зарегистрировал аккаунт но не подтвердил его
         if (userRepository.existsByEmail(email)) {
@@ -195,8 +197,8 @@ public class UserService {
         newUserState.setRegistrationDate(oldUserState.getRegistrationDate());
         newUserState.setEnabled(oldUserState.isEnabled());
 
-        if (!validationService.validate(newUserState))
-            throw new IllegalArgumentException(validationService.getConstrainsViolations(newUserState));
+        if (!validator.validate(newUserState))
+            throw new IllegalArgumentException(validator.getConstrainsViolations(newUserState));
 
         //Инвалидация сессий
         sessionManager.closeAllUserSessions(oldUserState);
@@ -316,9 +318,9 @@ public class UserService {
                     }
                 }
 
-                if (!validationService.validate(user)){
+                if (!validator.validate(user)){
                     verificationToken.setConfirmed(true);
-                    throw new IllegalArgumentException(validationService.getConstrainsViolations(user));
+                    throw new IllegalArgumentException(validator.getConstrainsViolations(user));
                 }
 
                 user.setEmail(verificationToken.getValue());

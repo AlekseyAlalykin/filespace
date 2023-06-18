@@ -1,5 +1,6 @@
-package org.filespace.services;
+package org.filespace.services.util;
 
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.validation.ConstraintViolation;
@@ -8,8 +9,8 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import java.util.Set;
 
-@Service
-public class ValidationService {
+@Component
+public class ValidatorImpl {
 
     public <T> boolean validate(T entity){
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();

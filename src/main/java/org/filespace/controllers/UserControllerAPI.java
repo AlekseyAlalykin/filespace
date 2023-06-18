@@ -5,7 +5,7 @@ import org.filespace.model.entities.simplerelations.User;
 import org.filespace.model.intermediate.UserInfo;
 import org.filespace.security.SecurityUtil;
 import org.filespace.security.SessionManager;
-import org.filespace.services.UserService;
+import org.filespace.services.impl.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

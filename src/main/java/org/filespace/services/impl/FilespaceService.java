@@ -1,4 +1,4 @@
-package org.filespace.services;
+package org.filespace.services.impl;
 
 
 import org.filespace.model.entities.compoundrelations.*;
@@ -9,14 +9,13 @@ import org.filespace.model.intermediate.FilespaceFileInfo;
 import org.filespace.model.intermediate.FilespacePermissions;
 import org.filespace.model.intermediate.FilespaceUserInfo;
 import org.filespace.repositories.*;
+import org.filespace.services.util.ValidatorImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,7 +38,7 @@ public class FilespaceService {
     private FileFilespaceRelationRepository fileFilespaceRelationRepository;
 
     @Autowired
-    private ValidationService validationService;
+    private ValidatorImpl validator;
 
 
     public List<FilespacePermissions> getUserFilespacesByTitle(User user, String title){
@@ -52,9 +51,9 @@ public class FilespaceService {
     public Filespace createFilespace(User user, String title){
         Filespace filespace = new Filespace(title);
 
-        if (!validationService.validate(filespace))
+        if (!validator.validate(filespace))
             throw new IllegalArgumentException(
-                    validationService.getConstrainsViolations(filespace));
+                    validator.getConstrainsViolations(filespace));
 
         filespaceRepository.save(filespace);
 
